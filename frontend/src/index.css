@@ -3,15 +3,15 @@
 
 /* stylelint-disable-next-line at-rule-no-unknown */
 @theme {
-  --color-obsidian-950: #050505;
-  --color-obsidian-900: #0d1117;
-  --color-obsidian-800: #161b22;
-  --color-obsidian-700: #21262d;
-  --color-obsidian-600: #30363d;
+  --color-obsidian-950: #000000;
+  --color-obsidian-900: #050505;
+  --color-obsidian-800: #0a0a0a;
+  --color-obsidian-700: #111111;
+  --color-obsidian-600: #1a1a1a;
   
-  --color-accent-blue: #2f81f7;
-  --color-accent-purple: #a371f7;
-  --color-accent-cyan: #39c5bb;
+  --color-accent-blue: #0070f3;
+  --color-accent-purple: #7928ca;
+  --color-accent-cyan: #50e3c2;
   
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-heading: 'Outfit', sans-serif;
@@ -51,17 +51,17 @@ h1, h2, h3, h4 {
 
 @layer utilities {
   .glass {
-    background-color: color-mix(in srgb, var(--color-obsidian-900) 60%, transparent);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: rgba(10, 10, 10, 0.7);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
   
   .glass-dark {
-    background-color: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(40px);
-    -webkit-backdrop-filter: blur(40px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(50px);
+    -webkit-backdrop-filter: blur(50px);
+    border: 1px solid rgba(255, 255, 255, 0.04);
   }
 
   .text-gradient {
@@ -88,11 +88,11 @@ h1, h2, h3, h4 {
 
   .mesh-bg {
     background: 
-      radial-gradient(at 0% 0%, rgba(47, 129, 247, 0.15) 0px, transparent 50%),
-      radial-gradient(at 100% 0%, rgba(163, 113, 247, 0.15) 0px, transparent 50%),
-      radial-gradient(at 50% 50%, rgba(5, 5, 5, 1) 0px, transparent 100%),
-      radial-gradient(at 100% 100%, rgba(57, 197, 187, 0.1) 0px, transparent 50%),
-      radial-gradient(at 0% 100%, rgba(47, 129, 247, 0.1) 0px, transparent 50%);
+      radial-gradient(at 0% 0%, rgba(0, 112, 243, 0.2) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(121, 40, 202, 0.2) 0px, transparent 50%),
+      radial-gradient(at 50% 50%, rgba(0, 0, 0, 1) 0px, transparent 100%),
+      radial-gradient(at 100% 100%, rgba(80, 227, 194, 0.15) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, rgba(0, 112, 243, 0.15) 0px, transparent 50%);
   }
 
   .noise {

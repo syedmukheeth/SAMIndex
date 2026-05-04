@@ -315,12 +315,12 @@ const CodeSearchPage = () => {
   return (
     <div className="min-h-screen bg-obsidian-950 text-white selection:bg-accent-blue/30 relative overflow-hidden">
       {/* Background Layer */}
-      <div className="fixed inset-0 mesh-bg opacity-40" />
-      <div className="fixed inset-0 noise" />
+      <div className="fixed inset-0 mesh-bg opacity-40 pointer-events-none" />
+      <div className="fixed inset-0 noise pointer-events-none" />
       
       {/* Animated Blobs */}
-      <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-accent-blue/10 rounded-full blur-[120px] animate-pulse" />
-      <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent-purple/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
+      <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-accent-blue/10 rounded-full blur-[120px] animate-pulse pointer-events-none" />
+      <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent-purple/10 rounded-full blur-[120px] animate-pulse pointer-events-none" style={{ animationDelay: '2s' }} />
 
       <div className="relative z-10 pt-32 pb-20 px-6">
         <header className="text-center mb-20">
