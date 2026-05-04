@@ -39,18 +39,20 @@ const CodeSearchPage = () => {
   }, [debouncedQuery]);
 
   const handleIndexRepo = async () => {
-    let cleanPath = repoUrl.trim();
+    // Clean URL/Path
+    let cleanPath = repoUrl.trim().replace(/\/$/, ""); // Remove trailing slash
     if (cleanPath.includes('github.com/')) {
       cleanPath = cleanPath.split('github.com/')[1];
     }
     const parts = cleanPath.split('/').filter(Boolean);
     
     if (parts.length < 2) {
-      setIndexStatus({ type: 'error', message: 'Please provide owner/repo or a valid URL' });
+      setIndexStatus({ type: 'error', message: 'Please provide both owner and repository (e.g. syedmukheeth/SAMIndex)' });
       return;
     }
 
-    const [owner, repo] = parts;
+    const owner = parts[0];
+    const repo = parts[1];
     setIsIndexing(true);
     setIndexStatus(null);
     setIndexProgress(10); // Start progress

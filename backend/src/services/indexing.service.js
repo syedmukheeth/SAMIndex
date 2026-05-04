@@ -38,8 +38,8 @@ const processIndexing = async (data, job = null) => {
         batch.map(async (fileInfo) => {
           const { path, size } = fileInfo;
           
-          // SKIP large files (> 100KB)
-          if (size > 102400) {
+          // SKIP extremely large files (> 500KB)
+          if (size > 512000) {
             console.log(`[IndexingService] Skipping large file: ${path} (${size} bytes)`);
             return null;
           }
