@@ -1,6 +1,7 @@
-@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap');
+@import "tailwindcss";
 
+/* stylelint-disable-next-line at-rule-no-unknown */
 @theme {
   --color-obsidian-950: #050505;
   --color-obsidian-900: #0d1117;
