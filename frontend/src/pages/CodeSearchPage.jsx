@@ -134,8 +134,9 @@ const CodeSearchPage = () => {
   };
 
   const highlightKeyword = (text, keyword) => {
+    if (!text) return '';
     if (!keyword) return text;
-    const parts = text.split(new RegExp(`(${keyword})`, 'gi'));
+    const parts = text.split(new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
     return parts.map((part, i) => 
       part.toLowerCase() === keyword.toLowerCase() 
         ? <span key={i} className="bg-blue-500/40 text-blue-100 font-bold px-0.5 rounded-[2px] border-b-2 border-blue-400/50">{part}</span> 
@@ -265,7 +266,7 @@ const CodeSearchPage = () => {
                         <div className="flex flex-col">
                           <div 
                             className="flex items-center gap-2 cursor-pointer group/link"
-                            onClick={() => openGitHub(result.owner, result.repo, result.path, result.line)}
+                            onClick={() => openGitHub(result.owner, result.repo, result.path, result.snippets[0]?.line)}
                           >
                             <span className="text-sm font-bold text-white group-hover/link:text-blue-400 transition-colors">
                               {result.owner} <span className="text-gray-600">/</span> {result.repo}
@@ -274,10 +275,10 @@ const CodeSearchPage = () => {
                           </div>
                           <span 
                             className="text-xs text-gray-500 font-mono flex items-center gap-1 cursor-pointer hover:text-blue-300 transition-colors"
-                            onClick={() => openGitHub(result.owner, result.repo, result.path, result.line)}
+                            onClick={() => openGitHub(result.owner, result.repo, result.path, result.snippets[0]?.line)}
                           >
                             <FileText className="w-3 h-3" />
-                            {result.path} <span className="text-blue-500/70 ml-1">#L{result.line}</span>
+                            {result.path} <span className="text-blue-500/70 ml-1">#L{result.snippets[0]?.line}</span>
                           </span>
                         </div>
                       </div>
@@ -288,7 +289,11 @@ const CodeSearchPage = () => {
                            <span className="text-xs font-bold text-blue-400">{result.path.split('.').pop()?.toUpperCase()}</span>
                         </div>
                         <button 
-                          onClick={(e) => { e.stopPropagation(); handleCopy(result.snippet.replace(/\.\.\.\n/g, ''), idx); }}
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            const fullSnippet = result.snippets.map(s => s.content.replace(/\.\.\.\n/g, '').replace(/\n\.\.\./g, '')).join('\n---\n');
+                            handleCopy(fullSnippet, idx); 
+                          }}
                           className={`p-2.5 rounded-xl border border-[#30363d] transition-all flex items-center gap-2 ${
                             copiedId === idx 
                               ? 'bg-green-500/10 border-green-500/50 text-green-400' 
@@ -303,21 +308,24 @@ const CodeSearchPage = () => {
 
                     {/* Code Editor Style Body */}
                     <div 
-                      className="relative bg-[#0d1117] p-6 group-hover:bg-[#0a0d12] transition-colors cursor-pointer"
-                      onClick={() => openGitHub(result.owner, result.repo, result.path, result.line)}
+                      className="relative bg-[#0d1117] p-6 group-hover:bg-[#0a0d12] transition-colors cursor-pointer space-y-6"
+                      onClick={() => openGitHub(result.owner, result.repo, result.path, result.snippets[0]?.line)}
                     >
                       <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)] opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                      <div className="flex gap-4 overflow-x-auto custom-scrollbar">
-                        {/* Fake line numbers for aesthetic */}
-                        <div className="hidden sm:flex flex-col text-right text-gray-700 font-mono text-[13.5px] select-none pr-4 border-r border-[#30363d]/30">
-                          {Array(result.snippet.split('\n').length).fill(0).map((_, i) => (
-                            <div key={i}>{result.line - 2 + i > 0 ? result.line - 2 + i : ''}</div>
-                          ))}
+                      
+                      {result.snippets.map((snippet, sIdx) => (
+                        <div key={sIdx} className="flex gap-4 overflow-x-auto custom-scrollbar">
+                          {/* Fake line numbers for aesthetic */}
+                          <div className="hidden sm:flex flex-col text-right text-gray-700 font-mono text-[13.5px] select-none pr-4 border-r border-[#30363d]/30 min-w-[40px]">
+                            {snippet.content.split('\n').map((_, i) => (
+                              <div key={i}>{snippet.line - 2 + i > 0 ? snippet.line - 2 + i : ''}</div>
+                            ))}
+                          </div>
+                          <pre className="text-[13.5px] font-mono leading-relaxed text-gray-300">
+                            <code>{highlightKeyword(snippet.content, debouncedQuery)}</code>
+                          </pre>
                         </div>
-                        <pre className="text-[13.5px] font-mono leading-relaxed text-gray-300">
-                          <code>{highlightKeyword(result.snippet, debouncedQuery)}</code>
-                        </pre>
-                      </div>
+                      ))}
                       
                       {/* View on GitHub Overlay Badge */}
                       <div className="absolute bottom-4 right-6 opacity-0 group-hover:opacity-100 transition-opacity bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded-md flex items-center gap-1 shadow-lg">
