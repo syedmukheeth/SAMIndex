@@ -140,18 +140,24 @@ exports.searchCode = catchAsync(async (req, res, next) => {
   const limitNum = parseInt(limit, 10);
   const skip = (pageNum - 1) * limitNum;
 
-  // 1. Run Search and Count in Parallel
+  // 1. Build Query (Regex for partial matches across all fields)
+  const searchQuery = {
+    $or: [
+      { content: { $regex: q, $options: 'i' } },
+      { path: { $regex: q, $options: 'i' } },
+      { repo: { $regex: q, $options: 'i' } },
+      { owner: { $regex: q, $options: 'i' } }
+    ]
+  };
+
+  // 2. Run Search and Count in Parallel
   const [results, totalResults] = await Promise.all([
-    CodeFile.find(
-      { $text: { $search: q } },
-      { score: { $meta: 'textScore' } }
-    )
-      .sort({ score: { $meta: 'textScore' } })
+    CodeFile.find(searchQuery)
       .skip(skip)
       .limit(limitNum)
       .select('repo path owner content')
       .lean(),
-    CodeFile.countDocuments({ $text: { $search: q } })
+    CodeFile.countDocuments(searchQuery)
   ]);
 
   // 2. Format Response with Multiple Code Snippets
@@ -192,11 +198,15 @@ exports.searchCode = catchAsync(async (req, res, next) => {
       });
     }
 
+    // Simple relevance: Prioritize path/repo matches over content
+    const relevance = file.path.toLowerCase().includes(q.toLowerCase()) || 
+                     file.repo.toLowerCase().includes(q.toLowerCase()) ? 10 : 1;
+
     return {
       repo: file.repo,
       owner: file.owner,
       path: file.path,
-      relevance: file.score,
+      relevance,
       snippets // Array of top 3 snippets
     };
   });
