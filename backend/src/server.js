@@ -80,13 +80,14 @@ const server = app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
 });
 
+// Export for Vercel (Optional but good for compatibility)
+module.exports = app;
+
 // Handle unhandled rejections
 process.on('unhandledRejection', (err) => {
   console.log('UNHANDLED REJECTION! 💥 Shutting down...');
   console.log(err.name, err.message);
-  server.close(() => {
-    process.exit(1);
-  });
+  process.exit(1);
 });
 
 process.on('SIGTERM', () => {
