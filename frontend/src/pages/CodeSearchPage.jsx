@@ -405,9 +405,9 @@ const CodeSearchPage = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="mt-6 flex flex-wrap items-center justify-center gap-4"
+              className="mt-6 flex flex-wrap items-center justify-center gap-4 relative z-50"
             >
-              <div className="flex items-center glass rounded-full px-2 py-1.5 border-white/5 min-w-[320px] focus-within:border-accent-blue/30 transition-all">
+              <div className="flex items-center glass rounded-full px-2 py-1.5 border-white/10 min-w-[320px] focus-within:border-accent-blue/50 transition-all shadow-xl">
                 <Globe className="ml-3 text-white/30 w-4 h-4" />
                 <input
                   id="index-input"
