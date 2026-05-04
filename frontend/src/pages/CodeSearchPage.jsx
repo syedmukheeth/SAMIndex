@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Code, Book, FileText, Loader2, Database, CheckCircle2, AlertCircle, Copy, Check, Terminal, Zap, Hash, ExternalLink } from 'lucide-react';
-import { searchCode, indexRepo } from '../services/api';
+import { searchCode, indexRepo, getIndexStatus } from '../services/api';
 import { useDebounce } from '../hooks/useDebounce';
 
 const CodeSearchPage = () => {
@@ -65,17 +65,55 @@ const CodeSearchPage = () => {
 
     try {
       const response = await indexRepo(owner, repo);
-      clearInterval(progressInterval);
-      setIndexProgress(100);
-      setIndexStatus({ 
-        type: 'success', 
-        message: `Successfully indexed ${response.data.filesIndexed} files from ${repo}` 
-      });
-      setRepoUrl('');
-      setTimeout(() => {
-        setIndexStatus(null);
-        setIndexProgress(0);
-      }, 5000);
+      
+      if (response.data && response.data.jobId) {
+        // We have a background job (or local fallback job)
+        const jobId = response.data.jobId;
+        
+        // Start Polling
+        const pollStatus = async () => {
+          try {
+            const statusRes = await getIndexStatus(jobId);
+            const { state, progress, result } = statusRes.data;
+            
+            setIndexProgress(progress);
+            
+            if (state === 'completed') {
+              setIndexStatus({ 
+                type: 'success', 
+                message: `Successfully indexed ${result?.filesIndexed || 'all'} files from ${repo}` 
+              });
+              setIsIndexing(false);
+              setRepoUrl('');
+              setTimeout(() => {
+                setIndexStatus(null);
+                setIndexProgress(0);
+              }, 5000);
+            } else if (state === 'failed') {
+              setIndexStatus({ type: 'error', message: 'Indexing failed. Please check logs.' });
+              setIsIndexing(false);
+            } else {
+              // Still active, poll again
+              setTimeout(pollStatus, 2000);
+            }
+          } catch (err) {
+            console.error('Polling failed:', err);
+            setIsIndexing(false);
+            setIndexStatus({ type: 'error', message: 'Lost connection to indexing server' });
+          }
+        };
+        
+        pollStatus();
+      } else {
+        // Direct response (legacy or small repo)
+        setIndexProgress(100);
+        setIndexStatus({ 
+          type: 'success', 
+          message: `Successfully indexed ${response.data.filesIndexed} files from ${repo}` 
+        });
+        setIsIndexing(false);
+        setRepoUrl('');
+      }
     } catch (error) {
       clearInterval(progressInterval);
       setIndexProgress(0);
@@ -83,7 +121,6 @@ const CodeSearchPage = () => {
         type: 'error', 
         message: error.response?.data?.message || 'Indexing failed. Check repository visibility.' 
       });
-    } finally {
       setIsIndexing(false);
     }
   };

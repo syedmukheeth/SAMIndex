@@ -4,6 +4,8 @@ const cache = require('../utils/cache');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const CodeFile = require('../models/codeFile.model');
+const { isRedisConnected } = require('../config/redis');
+const indexingService = require('../services/indexing.service');
 
 /**
  * @desc    Add repository indexing task to queue
@@ -28,32 +30,52 @@ exports.indexRepository = catchAsync(async (req, res, next) => {
   }
 
   // 2. PRE-FLIGHT: Check repository size/file count to prevent abuse
-  // We fetch the file list here to validate limits before queuing
   const filePaths = await githubService.getRepoFiles(owner, repo);
   
   if (filePaths.length > 5000) {
     return next(new AppError(`Repository too large (${filePaths.length} files). Max limit is 5000 files for indexing.`, 400));
   }
 
-  // 3. Add to BullMQ
-  const job = await indexQueue.add(`index-${owner}-${repo}`, {
-    owner,
-    repo,
-    preFetchedFiles: filePaths // Pass these to worker so it doesn't fetch again
-  });
-
-  // 3. Mark as pending in cache (briefly)
-  cache.set(cacheKey, 'pending', 300);
-
-  res.status(202).json({
-    status: 'success',
-    message: 'Indexing task added to background queue',
-    data: {
-      jobId: job.id,
+  // 3. Queue vs Fallback
+  if (isRedisConnected()) {
+    console.log(`[Queue] Adding ${owner}/${repo} to BullMQ`);
+    const job = await indexQueue.add(`index-${owner}-${repo}`, {
       owner,
-      repo
-    }
-  });
+      repo,
+      preFetchedFiles: filePaths
+    });
+
+    cache.set(cacheKey, 'pending', 300);
+
+    return res.status(202).json({
+      status: 'success',
+      message: 'Indexing task added to background queue',
+      data: { jobId: job.id, owner, repo }
+    });
+  } else {
+    // FALLBACK: Synchronous indexing for local development
+    console.log(`[Local Fallback] Redis unavailable. Starting synchronous indexing for ${owner}/${repo}`);
+    
+    // We run this "in the background" from the user's perspective by returning 202 immediately
+    // but starting the promise without awaiting it (or using setImmediate)
+    const localJobId = `local:${owner}:${repo}:${Date.now()}`;
+    
+    // Start indexing but don't await (it runs in background node process)
+    indexingService.processIndexing({ 
+      owner, 
+      repo, 
+      preFetchedFiles: filePaths,
+      jobId: localJobId
+    }).catch(err => console.error('[Local Fallback Error]:', err));
+
+    cache.set(cacheKey, 'pending', 300);
+
+    return res.status(202).json({
+      status: 'success',
+      message: 'Redis unavailable: Started local synchronous indexing fallback',
+      data: { jobId: localJobId, owner, repo, fallback: true }
+    });
+  }
 });
 
 /**
@@ -62,6 +84,26 @@ exports.indexRepository = catchAsync(async (req, res, next) => {
  */
 exports.getIndexStatus = catchAsync(async (req, res, next) => {
   const { jobId } = req.params;
+
+  // Handle Local Fallback Jobs
+  if (jobId.startsWith('local:')) {
+    const [prefix, owner, repo, timestamp] = jobId.split(':');
+    
+    // Check if the repo has ANY files indexed
+    const count = await CodeFile.countDocuments({ owner, repo });
+    
+    return res.status(200).json({
+      status: 'success',
+      data: {
+        id: jobId,
+        state: count > 0 ? 'completed' : 'active',
+        progress: count > 0 ? 100 : 45, 
+        result: { fallback: true, filesIndexed: count },
+        isFallback: true
+      }
+    });
+  }
+
   const job = await indexQueue.getJob(jobId);
 
   if (!job) {

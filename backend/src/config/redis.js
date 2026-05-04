@@ -8,12 +8,21 @@ const redisConfig = {
 
 const connection = new Redis(redisConfig);
 
+let isConnected = false;
+
 connection.on('error', (err) => {
+  isConnected = false;
   console.error('Redis Connection Error:', err.message);
 });
 
 connection.on('connect', () => {
+  isConnected = true;
   console.log(`Connected to Redis at ${redisConfig.host}:${redisConfig.port}`);
 });
 
+connection.on('close', () => {
+  isConnected = false;
+});
+
 module.exports = connection;
+module.exports.isRedisConnected = () => isConnected;

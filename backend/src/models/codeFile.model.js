@@ -48,11 +48,15 @@ codeFileSchema.index({ owner: 1, repo: 1 });
 codeFileSchema.index(
   { 
     path: 'text', 
-    content: 'text' 
+    content: 'text',
+    repo: 'text',
+    owner: 'text'
   }, 
   { 
     weights: { 
       path: 10, 
+      repo: 5,
+      owner: 2,
       content: 1 
     },
     name: 'CodeSearchIndex'
