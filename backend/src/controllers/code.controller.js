@@ -4,6 +4,7 @@ const cache = require('../utils/cache');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const CodeFile = require('../models/codeFile.model');
+const SearchHistory = require('../models/SearchHistory');
 const { isRedisConnected } = require('../config/redis');
 const indexingService = require('../services/indexing.service');
 
@@ -127,7 +128,7 @@ exports.getIndexStatus = catchAsync(async (req, res, next) => {
 });
 
 exports.searchCode = catchAsync(async (req, res, next) => {
-  const { q, page = 1, limit = 20 } = req.query;
+  const { q, repo, page = 1, limit = 20 } = req.query;
 
   if (!q) {
     return res.status(200).json({
@@ -149,6 +150,10 @@ exports.searchCode = catchAsync(async (req, res, next) => {
       { owner: { $regex: q, $options: 'i' } }
     ]
   };
+
+  if (repo) {
+    searchQuery.repo = repo;
+  }
 
   // 2. Run Search and Count in Parallel
   const [results, totalResults] = await Promise.all([
@@ -210,6 +215,28 @@ exports.searchCode = catchAsync(async (req, res, next) => {
       snippets // Array of top 3 snippets
     };
   });
+
+  // 3. Save History (Async, don't wait for response)
+  const trimmedQuery = q.trim();
+  if (req.user && trimmedQuery.length >= 3) {
+    // Avoid duplicate spam: Upsert based on userId, repo, and query
+    // This keeps the history clean but updates the 'last searched' time
+    SearchHistory.findOneAndUpdate(
+      { 
+        userId: req.user.id, 
+        repo: repo || 'global', 
+        query: trimmedQuery 
+      },
+      { 
+        timestamp: new Date() 
+      },
+      { 
+        upsert: true, 
+        new: true,
+        setDefaultsOnInsert: true 
+      }
+    ).catch(err => console.error('Error saving search history:', err));
+  }
 
   res.status(200).json({
     status: 'success',

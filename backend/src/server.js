@@ -15,6 +15,8 @@ const globalErrorHandler = require('./middleware/error.middleware');
 const AppError = require('./utils/appError');
 const apiRoutes = require('./routes');
 const initCronJobs = require('./services/cron.service');
+const passport = require('passport');
+require('./config/passport'); // Load Passport Strategy
 // Initialize Workers
 require('./workers/index.worker');
 
@@ -58,6 +60,9 @@ app.use(cors());
 
 // Data compression
 app.use(compression());
+
+// Initialize Passport
+app.use(passport.initialize());
 
 // 2) ROUTES
 app.use('/api/v1', apiRoutes);

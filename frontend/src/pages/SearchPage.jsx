@@ -3,7 +3,7 @@ import Navbar from '../components/layout/Navbar';
 import RepoCard from '../components/results/RepoCard';
 import UserCard from '../components/results/UserCard';
 import Skeleton from '../components/ui/Skeleton';
-import { Search, Filter, RefreshCcw, AlertCircle } from 'lucide-react';
+import { Search, Filter, RefreshCcw, CircleAlert } from 'lucide-react';
 import { searchGitHub, fetchUser } from '../services/api';
 import { useDebounce } from '../hooks/useDebounce';
 
@@ -60,98 +60,110 @@ const SearchPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f6f8fa]">
-      <main className="max-w-6xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-obsidian-950 text-white selection:bg-accent-blue/30">
+      <main className="max-w-6xl mx-auto px-6 py-24">
         {/* Search Header */}
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-8">
-          <form onSubmit={handleSearch} className="flex-1 w-full flex gap-2">
-            <div className="relative flex-1">
+        <div className="flex flex-col md:flex-row gap-6 items-center justify-between mb-12">
+          <form onSubmit={handleSearch} className="flex-1 w-full flex gap-3">
+            <div className="relative flex-1 group">
               <input 
                 type="text" 
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search repositories or users..." 
-                className="w-full bg-white border border-[#d0d7de] rounded-md py-2 pl-10 pr-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#0969da] focus:border-transparent transition-all"
+                className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-accent-blue/50 focus:border-accent-blue/50 transition-all group-hover:border-white/20"
               />
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-accent-blue transition-colors" size={20} />
             </div>
-            <button 
+            <motion.button 
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={loading}
-              className="bg-[#2da44e] text-white font-bold py-2 px-4 rounded-md hover:bg-[#2c974b] disabled:opacity-50 transition-colors shadow-sm"
+              className="bg-white text-black font-black py-3 px-8 rounded-2xl hover:bg-white/90 disabled:opacity-50 transition-all shadow-xl active:shadow-none uppercase tracking-tight text-xs"
             >
               {loading ? "Searching..." : "Search"}
-            </button>
+            </motion.button>
           </form>
 
-          <button 
+          <motion.button 
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={handleSync}
             disabled={syncing || !query}
-            className="flex items-center gap-2 text-sm font-semibold border border-[#d0d7de] bg-white px-4 py-2 rounded-md hover:bg-gray-50 disabled:opacity-50 transition-all shadow-sm"
+            className="flex items-center gap-2 text-xs font-black uppercase tracking-widest glass-dark px-6 py-3 rounded-2xl hover:bg-white/5 disabled:opacity-50 transition-all border border-white/10"
           >
-            <RefreshCcw size={16} className={syncing ? "animate-spin" : ""} />
+            <RefreshCcw size={16} className={syncing ? "animate-spin" : "text-accent-cyan"} />
             {syncing ? "Syncing..." : "Sync from GitHub"}
-          </button>
+          </motion.button>
         </div>
 
         {/* Tabs */}
-        <div className="border-b border-[#d0d7de] mb-6 flex gap-8">
+        <div className="border-b border-white/5 mb-10 flex gap-10">
           <button 
             onClick={() => setActiveTab('repos')}
-            className={`pb-3 text-sm font-medium transition-all relative ${activeTab === 'repos' ? 'text-black' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`pb-4 text-sm font-bold tracking-tight transition-all relative ${activeTab === 'repos' ? 'text-white' : 'text-white/40 hover:text-white/60'}`}
           >
             Repositories
-            <span className={`text-xs ml-2 px-2 py-0.5 rounded-full bg-gray-100 ${activeTab === 'repos' ? 'text-black font-bold' : 'text-gray-500'}`}>
+            <span className={`text-[10px] ml-2 px-2 py-0.5 rounded-full ${activeTab === 'repos' ? 'bg-accent-blue text-white' : 'bg-white/5 text-white/30'}`}>
               {results.repositories.length}
             </span>
-            {activeTab === 'repos' && <div className="absolute bottom-0 left-0 w-full h-[2px] bg-[#fd8c73]"></div>}
+            {activeTab === 'repos' && (
+              <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 w-full h-[2px] bg-accent-blue shadow-[0_0_10px_rgba(47,129,247,0.5)]" />
+            )}
           </button>
           <button 
             onClick={() => setActiveTab('users')}
-            className={`pb-3 text-sm font-medium transition-all relative ${activeTab === 'users' ? 'text-black' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`pb-4 text-sm font-bold tracking-tight transition-all relative ${activeTab === 'users' ? 'text-white' : 'text-white/40 hover:text-white/60'}`}
           >
             Users
-            <span className={`text-xs ml-2 px-2 py-0.5 rounded-full bg-gray-100 ${activeTab === 'users' ? 'text-black font-bold' : 'text-gray-500'}`}>
+            <span className={`text-[10px] ml-2 px-2 py-0.5 rounded-full ${activeTab === 'users' ? 'bg-accent-purple text-white' : 'bg-white/5 text-white/30'}`}>
               {results.users.length}
             </span>
-            {activeTab === 'users' && <div className="absolute bottom-0 left-0 w-full h-[2px] bg-[#fd8c73]"></div>}
+            {activeTab === 'users' && (
+              <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 w-full h-[2px] bg-accent-purple shadow-[0_0_10px_rgba(163,113,247,0.5)]" />
+            )}
           </button>
         </div>
 
         {/* Error State */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md flex items-center gap-3 text-red-700 animate-in fade-in slide-in-from-top-1">
-            <AlertCircle size={20} />
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 p-4 glass-dark border-red-500/20 rounded-2xl flex items-center gap-3 text-red-400"
+          >
+            <CircleAlert size={20} />
             <p className="text-sm font-medium">{error}</p>
-          </div>
+          </motion.div>
         )}
 
         {/* Content */}
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {loading ? (
-            Array(5).fill(0).map((_, i) => (
-              <div key={i} className="p-4 border border-[#d0d7de] rounded-lg bg-white space-y-3">
-                <Skeleton className="h-6 w-1/3" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-2/3" />
+            Array(6).fill(0).map((_, i) => (
+              <div key={i} className="p-6 glass-dark rounded-3xl border border-white/5 space-y-4">
+                <Skeleton className="h-6 w-1/3 rounded-lg" />
+                <Skeleton className="h-4 w-full rounded-lg" />
+                <Skeleton className="h-4 w-2/3 rounded-lg" />
               </div>
             ))
           ) : activeTab === 'repos' ? (
             results.repositories.length > 0 ? (
               results.repositories.map(repo => <RepoCard key={repo.githubId} repo={repo} />)
             ) : (
-              <div className="text-center py-20 bg-white border border-[#d0d7de] rounded-lg">
-                <h3 className="text-xl font-semibold text-gray-800">No repositories found</h3>
-                <p className="text-gray-500 mt-2">Try syncing a user to populate the database.</p>
+              <div className="col-span-full text-center py-32 glass-dark rounded-3xl border border-white/5 border-dashed">
+                <h3 className="text-xl font-bold text-white/80">No repositories found</h3>
+                <p className="text-white/30 mt-2 text-sm">Try syncing a user to populate the database.</p>
               </div>
             )
           ) : (
             results.users.length > 0 ? (
               results.users.map(user => <UserCard key={user.githubId} user={user} />)
             ) : (
-              <div className="text-center py-20 bg-white border border-[#d0d7de] rounded-lg">
-                <h3 className="text-xl font-semibold text-gray-800">No users found</h3>
-                <p className="text-gray-500 mt-2">Enter a username and click 'Sync' to fetch data.</p>
+              <div className="col-span-full text-center py-32 glass-dark rounded-3xl border border-white/5 border-dashed">
+                <h3 className="text-xl font-bold text-white/80">No users found</h3>
+                <p className="text-white/30 mt-2 text-sm">Enter a username and click 'Sync' to fetch data.</p>
               </div>
             )
           )}

@@ -1,5 +1,5 @@
 const axios = require('axios');
-const User = require('../models/user.model');
+const User = require('../models/User');
 const Repository = require('../models/repository.model');
 const AppError = require('../utils/appError');
 const ranking = require('../utils/ranking');

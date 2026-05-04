@@ -6,13 +6,25 @@ const redisConfig = {
   maxRetriesPerRequest: null, // Required for BullMQ
 };
 
-const connection = new Redis(redisConfig);
+const connection = new Redis({
+  ...redisConfig,
+  retryStrategy: (times) => {
+    // Stop retrying after 1 attempt if it's local dev and we want to allow fallback
+    if (times > 1) {
+      console.warn('[Redis] Connection failed. Fallback mode active.');
+      return null;
+    }
+    return 2000; // retry once after 2 seconds
+  }
+});
 
 let isConnected = false;
 
 connection.on('error', (err) => {
+  if (isConnected) {
+    console.error('Redis Connection Error:', err.message);
+  }
   isConnected = false;
-  console.error('Redis Connection Error:', err.message);
 });
 
 connection.on('connect', () => {

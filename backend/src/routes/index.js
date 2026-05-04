@@ -13,11 +13,16 @@ router.get('/health', (req, res) => {
 const fetchController = require('../controllers/fetch.controller');
 const searchController = require('../controllers/search.controller');
 const codeController = require('../controllers/code.controller');
-
+const authRoutes = require('./auth.routes');
+const historyRoutes = require('./history.routes');
 const authMiddleware = require('../middleware/auth.middleware');
 
+// Auth routes
+router.use('/auth', authRoutes);
+router.use('/history', historyRoutes);
+
 // Index Repository route
-router.post('/index-repo', authMiddleware.protect, codeController.indexRepository);
+router.post('/index-repo', authMiddleware.protectOrApiKey, codeController.indexRepository);
 router.get('/index-status/:jobId', codeController.getIndexStatus);
 
 // Code Search route
