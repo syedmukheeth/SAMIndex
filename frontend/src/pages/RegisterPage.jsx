@@ -30,7 +30,8 @@ const RegisterPage = () => {
     setError('');
     
     try {
-      const response = await axios.post('http://localhost:5000/api/v1/auth/register', {
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+      const response = await axios.post(`${baseUrl}/auth/register`, {
         name: formData.name,
         email: formData.email,
         password: formData.password
@@ -56,7 +57,8 @@ const RegisterPage = () => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:5000/api/v1/auth/google';
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+    window.location.href = `${baseUrl}/auth/google`;
   };
 
   return (

@@ -17,7 +17,8 @@ const LoginPage = () => {
     setError('');
     
     try {
-      const response = await axios.post('http://localhost:5000/api/v1/auth/login', {
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+      const response = await axios.post(`${baseUrl}/auth/login`, {
         email,
         password
       }, {
@@ -39,7 +40,8 @@ const LoginPage = () => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:5000/api/v1/auth/google';
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+    window.location.href = `${baseUrl}/auth/google`;
   };
 
   return (
