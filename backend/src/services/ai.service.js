@@ -20,19 +20,34 @@ exports.explainCode = async (code, fileName) => {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
+    // SAFETY: Truncate very large files to avoid API limits
+    const truncatedCode = code.length > 5000 ? code.substring(0, 5000) + "\n... [Truncated for AI Analysis]" : code;
+
     const prompt = `
       Explain this code snippet from "${fileName}" in 2 simple, non-technical sentences.
       Focus only on the purpose of the code.
 
       CODE:
-      ${code}
+      ${truncatedCode}
     `;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    return response.text().trim();
+    const text = response.text();
+    
+    if (!text) {
+      throw new Error("Google AI returned an empty response.");
+    }
+
+    return text.trim();
   } catch (err) {
-    console.error('[AI SERVICE ERROR]:', err.message);
-    return "AI analysis failed. Please check if GEMINI_API_KEY is set in your environment (Render/Vercel).";
+    // SENIOR DEV LOGGING: Print the real error to Render logs
+    console.error('---------- [NEURAL ERROR REPORT] ----------');
+    console.error('Message:', err.message);
+    console.error('Stack:', err.stack);
+    console.error('-------------------------------------------');
+
+    // Return a more descriptive error to the user
+    return `AI Error: ${err.message}. Please check Render logs for technical details.`;
   }
 };
