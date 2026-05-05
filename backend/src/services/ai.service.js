@@ -18,7 +18,9 @@ exports.explainCode = async (code, fileName) => {
 
     // Initialize inside the call to ensure it has the latest ENV vars
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    
+    // SENIOR DEV TIP: Switching to 'gemini-pro' for maximum stability across regions
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
     // SAFETY: Truncate very large files to avoid API limits
     const truncatedCode = code.length > 5000 ? code.substring(0, 5000) + "\n... [Truncated for AI Analysis]" : code;
