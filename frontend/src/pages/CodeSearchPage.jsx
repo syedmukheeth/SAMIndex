@@ -6,7 +6,7 @@ import {
   Zap, Hash, ExternalLink, Globe, Sparkles, Command, ArrowRight, X,
   History as HistoryIcon
 } from 'lucide-react';
-import { searchCode, indexRepo, getIndexStatus, getIndexedRepos } from '../services/api';
+import { searchCode, indexRepo, getIndexStatus, getIndexedRepos, getRepoDetails } from '../services/api';
 import { useDebounce } from '../hooks/useDebounce';
 import { useSearchParams } from 'react-router-dom';
 import Skeleton from '../components/ui/Skeleton';
@@ -250,6 +250,31 @@ const CodeSearchPage = () => {
     }
   }, [searchParams, setSearchParams]);
   
+  // NEW: Robust Workspace Status Synchronization
+  useEffect(() => {
+    const syncRepoStatus = async () => {
+      const owner = searchParams.get('owner');
+      const repo = searchParams.get('repo');
+      
+      if (owner && repo) {
+        try {
+          const response = await getRepoDetails(owner, repo);
+          setActiveRepo({ 
+            owner: response.data.owner, 
+            repo: response.data.name, 
+            isIndexed: response.data.isIndexed 
+          });
+        } catch (err) {
+          console.warn('Workspace metadata sync failed:', err.message);
+          // Fallback to basic info if not in our DB yet
+          setActiveRepo({ owner, repo, isIndexed: false });
+        }
+      }
+    };
+    
+    syncRepoStatus();
+  }, [searchParams]);
+  
   // NEW: Fetch all indexed repos to show status
   useEffect(() => {
     const fetchIndexedRepos = async () => {
@@ -389,10 +414,10 @@ const CodeSearchPage = () => {
           setIndexProgress(100);
           setTimeout(() => {
             const count = result?.filesIndexed || 0;
-            setIndexStatus({ type: 'success', message: `Successfully Indexed ${count} files!` });
+            setIndexStatus({ type: 'success', message: `Neural Link Established! Indexed ${result?.filesIndexed || 0} files.` });
             
-            // Lock the workspace
-            setActiveRepo({ owner, repo });
+            // Lock the workspace and mark as indexed
+            setActiveRepo({ owner, repo, isIndexed: true });
             setIsIndexing(false);
             setRepoUrl('');
             setShowSuccess(true);
@@ -443,37 +468,52 @@ const CodeSearchPage = () => {
       setIndexStatus({ type: 'error', message: 'REDIRECTING TO LOGIN... You must be signed in to index code.' });
       setIsIndexing(true);
       setTimeout(() => {
-        // Trigger the login flow (usually a modal or redirect)
-        const loginBtn = document.querySelector('button:contains("Log In")') || document.querySelector('a[href*="login"]');
+        // Trigger the login flow
+        const loginBtn = Array.from(document.querySelectorAll('button, a')).find(el => 
+          el.textContent.includes('Log In') || (el.getAttribute('href') && el.getAttribute('href').includes('login'))
+        );
         if (loginBtn) loginBtn.click();
         else window.location.href = '/login'; 
       }, 2000);
       return;
     }
 
-    if (!repoUrl.trim()) return;
+    // Use activeRepo if repoUrl is empty (allows clicking the "Indexing Required" badge)
+    let owner = '';
+    let repo = '';
+
+    if (!repoUrl.trim()) {
+      if (activeRepo) {
+        owner = activeRepo.owner;
+        repo = activeRepo.repo;
+      } else {
+        return;
+      }
+    }
     setIsIndexing(true);
     setIndexProgress(0);
     setIndexStatus({ type: 'info', message: 'Initializing Neural Engine...' });
 
     try {
-      // Robust URL Parsing
-      let path = repoUrl.trim().replace(/https?:\/\/github\.com\//i, '').replace(/\/$/, '');
-      const parts = path.split('/').filter(Boolean);
-      
-      if (parts.length < 2) {
-        throw new Error('Invalid URL. Use format: owner/repo');
-      }
+      if (repoUrl.trim()) {
+        // Robust URL Parsing
+        let path = repoUrl.trim().replace(/https?:\/\/github\.com\//i, '').replace(/\/$/, '');
+        const parts = path.split('/').filter(Boolean);
+        
+        if (parts.length < 2) {
+          throw new Error('Invalid URL. Use format: owner/repo');
+        }
 
-      const owner = parts[0];
-      const repo = parts[1];
+        owner = parts[0];
+        repo = parts[1];
+      }
 
       const response = await indexRepo(owner, repo);
       const { jobId, cached } = response.data;
 
       if (cached) {
         setIndexStatus({ type: 'success', message: 'Neural Link Cached!' });
-        setActiveRepo({ owner, repo });
+        setActiveRepo({ owner, repo, isIndexed: true });
         setIsIndexing(false);
         setRepoUrl('');
         if (query) handleSearch(query);

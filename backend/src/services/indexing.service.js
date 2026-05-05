@@ -9,7 +9,9 @@ const cache = require('../utils/cache');
  * @param {Object} job - Optional BullMQ job object for progress updates
  */
 const processIndexing = async (data, job = null) => {
-  const { owner, repo, preFetchedFiles, jobId } = data;
+  const { jobId, preFetchedFiles } = data;
+  const owner = data.owner.toLowerCase();
+  const repo = data.repo.toLowerCase();
   const id = jobId || `local-${Date.now()}`;
   
   console.log(`[IndexingService] Starting indexing for ${owner}/${repo} (ID: ${id})`);
@@ -27,11 +29,18 @@ const processIndexing = async (data, job = null) => {
     console.log(`[IndexingService] Discovered ${filePaths.length} potential files for ${owner}/${repo}`);
 
     if (filePaths.length === 0) {
-      console.error(`[IndexingService] CRITICAL: No indexable files found for ${owner}/${repo}. Check permissions or repo contents.`);
+      console.error(`[IndexingService] CRITICAL: No indexable files found for ${owner}/${repo}.`);
+      
+      // Still update metadata so the UI knows we scanned it
+      await Repository.findOneAndUpdate(
+        { owner, name: repo },
+        { isIndexed: true, lastIndexedAt: new Date() }
+      );
+      
       throw new Error(`Repository "${repo}" appears empty or inaccessible. Verify your GitHub Token permissions.`);
     }
 
-    const CONCURRENCY_LIMIT = 3; // Reduced for stability
+    const CONCURRENCY_LIMIT = 10; // Boosted for high-fidelity scanning speed
     let indexedCount = 0;
     let failCount = 0;
     const bulkOperations = [];
@@ -44,8 +53,7 @@ const processIndexing = async (data, job = null) => {
         batch.map(async (fileInfo) => {
           const { path, size } = fileInfo;
           
-          if (size > 1024000) { // Increased to 1MB
-            console.log(`[IndexingService] Skipping large file: ${path} (${(size/1024).toFixed(1)}KB)`);
+          if (size > 1024000) { // Skip files > 1MB
             return null;
           }
 
@@ -80,7 +88,7 @@ const processIndexing = async (data, job = null) => {
         }
       });
 
-      if (bulkOperations.length >= 20) { // Smaller batches for frequent updates
+      if (bulkOperations.length >= 20) {
         try {
           await CodeFile.bulkWrite(bulkOperations, { ordered: false });
           bulkOperations.length = 0;
@@ -90,11 +98,18 @@ const processIndexing = async (data, job = null) => {
             await job.updateProgress(progress);
           } else if (jobId) {
             const progress = Math.min(10 + Math.floor((i / filePaths.length) * 85), 95);
-            cache.set(`job:${jobId}`, { state: 'active', progress, result: { filesIndexed: indexedCount } }, 3600);
+            cache.set(`job:${jobId}`, { 
+              state: 'active', 
+              progress, 
+              result: { 
+                filesIndexed: indexedCount,
+                filesFound: filePaths.length 
+              } 
+            }, 3600);
           }
         } catch (bErr) {
           console.error('[IndexingService] bulkWrite partially failed:', bErr.message);
-          bulkOperations.length = 0; // Clear anyway to continue
+          bulkOperations.length = 0;
         }
       }
     }

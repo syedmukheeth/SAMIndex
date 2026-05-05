@@ -30,17 +30,24 @@ exports.indexRepository = catchAsync(async (req, res, next) => {
     return next(new AppError('Please provide owner and repo name (or a full GitHub URL)', 400));
   }
 
-  // 1. Check Cache
   const cacheKey = `indexed:${owner.toLowerCase()}:${repo.toLowerCase()}`;
-  if (!force && cache.get(cacheKey)) {
+  
+  // 2. Pre-flight Check: Check DB status before expensive GitHub traversal
+  const existingRepo = await Repository.findOne({ 
+    owner: owner.toLowerCase(), 
+    name: repo.toLowerCase() 
+  });
+
+  if (!force && existingRepo?.isIndexed) {
+    cache.set(cacheKey, 'completed', 3600);
     return res.status(200).json({
       status: 'success',
-      message: `Repository ${owner}/${repo} is recently indexed`,
-      data: { cached: true }
+      message: `Neural Link Established for ${owner}/${repo}`,
+      data: { cached: true, isIndexed: true }
     });
   }
 
-  // 2. PRE-FLIGHT: Check repository size/file count to prevent abuse
+  // 3. PRE-FLIGHT: Check repository size/file count
   const filePaths = await githubService.getRepoFiles(owner, repo);
   
   if (filePaths.length === 0) {
@@ -117,16 +124,18 @@ exports.getIndexStatus = catchAsync(async (req, res, next) => {
     const parts = jobId.split(':');
     const owner = parts[1];
     const repo = parts[2];
-    
+
     const count = await CodeFile.countDocuments({ owner, repo });
+    const totalFiles = cachedStatus?.result?.filesFound || 100; // Default estimate or actual if known
+    const progress = Math.min(Math.floor((count / totalFiles) * 100), 99);
     
     return res.status(200).json({
       status: 'success',
       data: {
         id: jobId,
         state: count > 0 ? 'active' : 'waiting',
-        progress: Math.min(Math.floor((count / 50) * 100), 99), 
-        result: { filesIndexed: count },
+        progress, 
+        result: { filesIndexed: count, filesFound: totalFiles },
         isFallback: true
       }
     });
@@ -282,5 +291,27 @@ exports.searchCode = catchAsync(async (req, res, next) => {
     },
     count: formattedResults.length,
     data: formattedResults
+  });
+});
+
+/**
+ * @desc    Get repository details and indexing status
+ * @route   GET /api/v1/repo-details/:owner/:repo
+ */
+exports.getRepoDetails = catchAsync(async (req, res, next) => {
+  const { owner, repo } = req.params;
+
+  const repository = await Repository.findOne({ 
+    owner: owner.toLowerCase(), 
+    name: repo.toLowerCase() 
+  });
+
+  if (!repository) {
+    return next(new AppError('Repository not found in SAMIndex database', 404));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    data: repository
   });
 });
