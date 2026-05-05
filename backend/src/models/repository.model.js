@@ -45,6 +45,11 @@ const repositorySchema = new mongoose.Schema(
     lastIndexedAt: {
       type: Date,
     },
+    user: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User',
+      required: [true, 'Repository must belong to a user'],
+    },
   },
   {
     timestamps: true,

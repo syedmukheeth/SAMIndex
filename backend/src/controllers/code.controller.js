@@ -61,7 +61,8 @@ exports.indexRepository = catchAsync(async (req, res, next) => {
         url: meta.html_url,
         description: meta.description,
         githubId: meta.id,
-        isIndexed: false
+        isIndexed: false,
+        user: req.user._id // ASSOCIATE WITH USER
       });
     } catch (e) {
       console.warn('Metadata fetch failed, creating stub:', e.message);
@@ -69,7 +70,8 @@ exports.indexRepository = catchAsync(async (req, res, next) => {
         name: repo.toLowerCase(),
         owner: owner.toLowerCase(),
         url: `https://github.com/${owner}/${repo}`,
-        isIndexed: false
+        isIndexed: false,
+        user: req.user._id // ASSOCIATE WITH USER
       });
     }
   }

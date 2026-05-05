@@ -36,23 +36,26 @@ exports.searchAll = catchAsync(async (req, res, next) => {
   // Fields to exclude to reduce response size
   const excludeFields = '-__v -updatedAt -createdAt';
 
-  // 3. Perform parallel searches with .lean() for speed
-  const [users, repositories] = await Promise.all([
-    q 
-      ? User.find(searchQuery, textScoreProjection)
-          .select(excludeFields)
-          .sort(sort === 'score' ? { score: -1 } : textScoreProjection)
-          .skip(skip)
-          .limit(Number(limit))
-          .lean()
-      : Promise.resolve([]),
-    Repository.find(searchQuery, textScoreProjection)
-      .select(excludeFields)
-      .sort(q ? (sort === 'score' ? { stars: -1 } : textScoreProjection) : { lastIndexedAt: -1 })
-      .skip(skip)
-      .limit(Number(limit))
-      .lean(),
-  ]);
+    // 3. Perform parallel searches with .lean() for speed
+    // RECENT WORKSPACES PRIVACY: Only show repos belonging to the user
+    const repoQuery = req.user ? { ...searchQuery, user: req.user._id } : { _id: null }; // Guests see nothing
+
+    const [users, repositories] = await Promise.all([
+      q 
+        ? User.find(searchQuery, textScoreProjection)
+            .select(excludeFields)
+            .sort(sort === 'score' ? { score: -1 } : textScoreProjection)
+            .skip(skip)
+            .limit(Number(limit))
+            .lean()
+        : Promise.resolve([]),
+      Repository.find(repoQuery, textScoreProjection)
+        .select(excludeFields)
+        .sort(q ? (sort === 'score' ? { stars: -1 } : textScoreProjection) : { lastIndexedAt: -1 })
+        .skip(skip)
+        .limit(Number(limit))
+        .lean(),
+    ]);
 
   const responseData = {
     results: {

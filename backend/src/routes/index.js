@@ -34,7 +34,7 @@ router.post('/ai-explain', authMiddleware.identify, codeController.getAIExplanat
 router.post('/fetch/:username', fetchController.fetchUserAndRepos);
 
 // Search route
-router.get('/search', searchController.searchAll);
+router.get('/search', authMiddleware.identify, searchController.searchAll);
 
 // User details route
 router.get('/user/:username', searchController.getUserDetails);
