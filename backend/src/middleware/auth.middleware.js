@@ -44,6 +44,32 @@ exports.protect = async (req, res, next) => {
 };
 
 /**
+ * Identify user - populates req.user if token exists, but doesn't block if not
+ * Essential for public routes that save history (like search)
+ */
+exports.identify = async (req, res, next) => {
+  try {
+    let token;
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      token = req.headers.authorization.split(' ')[1];
+    }
+
+    if (!token) return next();
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-for-dev');
+    const currentUser = await User.findById(decoded.id);
+    
+    if (currentUser) {
+      req.user = currentUser;
+    }
+    next();
+  } catch (err) {
+    // If token is invalid, just proceed as guest
+    next();
+  }
+};
+
+/**
  * Protect or API Key - allows either a valid JWT or a valid internal API Key
  * Useful for allowing guest indexing in local dev
  */

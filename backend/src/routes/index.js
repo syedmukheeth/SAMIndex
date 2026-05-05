@@ -27,7 +27,7 @@ router.get('/index-status/:jobId', codeController.getIndexStatus);
 router.get('/repo-details/:owner/:repo', codeController.getRepoDetails);
 
 // Code Search route
-router.get('/code-search', codeController.searchCode);
+router.get('/code-search', authMiddleware.identify, codeController.searchCode);
 
 // Fetch route
 router.post('/fetch/:username', fetchController.fetchUserAndRepos);
