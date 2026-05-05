@@ -243,6 +243,7 @@ exports.searchCode = catchAsync(async (req, res, next) => {
     SearchHistory.findOneAndUpdate(
       { 
         userId: req.user.id, 
+        owner: req.query.owner || 'global',
         repo: repo || 'global', 
         query: trimmedQuery 
       },

@@ -6,6 +6,11 @@ const searchHistorySchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  owner: {
+    type: String,
+    trim: true,
+    index: true
+  },
   repo: {
     type: String,
     trim: true,

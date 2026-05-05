@@ -13,33 +13,38 @@ const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
     }
   }, [isOpen]);
 
-  const fetchHistory = () => {
+  const fetchHistory = async () => {
     setLoading(true);
     try {
-      const saved = localStorage.getItem('search_history');
-      if (saved) {
-        setHistory(JSON.parse(saved));
-      } else {
-        setHistory([]);
+      const response = await getHistory();
+      if (response.status === 'success') {
+        setHistory(response.data);
       }
     } catch (err) {
-      console.error('Failed to load local history:', err);
-      setHistory([]);
+      console.error('Failed to load remote history:', err);
+      // Fallback to local if API fails
+      const saved = localStorage.getItem('search_history');
+      if (saved) setHistory(JSON.parse(saved));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleClearHistory = () => {
-    localStorage.removeItem('search_history');
-    setHistory([]);
+  const handleClearHistory = async () => {
+    try {
+      await clearHistory();
+      localStorage.removeItem('search_history');
+      setHistory([]);
+    } catch (err) {
+      console.error('Failed to clear history:', err);
+    }
   };
 
   const groupHistoryByRepo = () => {
     return history.reduce((groups, item) => {
-      const repo = item.repo || 'Global';
-      if (!groups[repo]) groups[repo] = [];
-      groups[repo].push(item);
+      const repoName = item.repo && item.owner ? `${item.owner}/${item.repo}` : (item.repo || 'Global');
+      if (!groups[repoName]) groups[repoName] = [];
+      groups[repoName].push(item);
       return groups;
     }, {});
   };

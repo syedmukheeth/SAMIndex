@@ -198,6 +198,7 @@ const IndexingModal = ({ status, progress, repo, isOpen, onComplete }) => {
 const CodeSearchPage = () => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
+  const [groupedResults, setGroupedResults] = useState({});
   const [loading, setLoading] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
   
@@ -356,6 +357,15 @@ const CodeSearchPage = () => {
         }
         
         setResults(filteredResults);
+        
+        // NEW: Group results by repository for 'Tree' view
+        const groups = filteredResults.reduce((acc, result) => {
+          const key = `${result.owner}/${result.repo}`;
+          if (!acc[key]) acc[key] = [];
+          acc[key].push(result);
+          return acc;
+        }, {});
+        setGroupedResults(groups);
 
         // Save to local history
         try {
