@@ -86,29 +86,37 @@ exports.indexRepository = catchAsync(async (req, res, next) => {
 exports.getIndexStatus = catchAsync(async (req, res, next) => {
   const { jobId } = req.params;
 
-  // Handle Local Fallback Jobs
-  if (jobId.startsWith('local:')) {
-    const [prefix, owner, repo, timestamp] = jobId.split(':');
+  // Handle Local Fallback Jobs or Quick Status
+  if (jobId.startsWith('local:') || !isRedisConnected()) {
+    const owner = jobId.split(':')[1];
+    const repo = jobId.split(':')[2];
     
-    // Check if the repo has ANY files indexed
     const count = await CodeFile.countDocuments({ owner, repo });
     
     return res.status(200).json({
       status: 'success',
       data: {
         id: jobId,
-        state: count > 0 ? 'completed' : 'active',
-        progress: count > 0 ? 100 : 45, 
-        result: { fallback: true, filesIndexed: count },
+        state: count > 0 ? 'active' : 'waiting',
+        progress: Math.min(Math.floor((count / 50) * 100), 99), // Approximate until we know total
+        result: { filesIndexed: count },
         isFallback: true
       }
     });
   }
 
   const job = await indexQueue.getJob(jobId);
-
   if (!job) {
-    return next(new AppError('Job not found', 404));
+    // If job is missing from Redis, check if files actually exist in DB
+    const [_, owner, repo] = jobId.split(':');
+    const count = await CodeFile.countDocuments({ owner, repo });
+    if (count > 0) {
+      return res.status(200).json({
+        status: 'success',
+        data: { id: jobId, state: 'completed', progress: 100, result: { filesIndexed: count } }
+      });
+    }
+    return next(new AppError('Job tracking expired. Check results in 1 minute.', 404));
   }
 
   const state = await job.getState();
@@ -119,8 +127,8 @@ exports.getIndexStatus = catchAsync(async (req, res, next) => {
     status: 'success',
     data: {
       id: job.id,
-      state,
-      progress,
+      state: state === 'completed' ? 'completed' : state,
+      progress: state === 'completed' ? 100 : progress,
       result,
       failedReason: job.failedReason
     }
