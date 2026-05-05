@@ -24,7 +24,7 @@ const processIndexing = async (data, job = null) => {
       cache.set(`job:${jobId}`, { state: 'active', progress: 10, result: { filesIndexed: 0 } }, 3600);
     }
 
-    // 2. Fetch file list
+    // 2. Fetch file list (Internal discovery if not provided)
     const filePaths = preFetchedFiles || await githubService.getRepoFiles(owner, repo);
     console.log(`[IndexingService] Discovered ${filePaths.length} potential files for ${owner}/${repo}`);
 
@@ -37,10 +37,10 @@ const processIndexing = async (data, job = null) => {
         { isIndexed: true, lastIndexedAt: new Date() }
       );
       
-      throw new Error(`Repository "${repo}" appears empty or inaccessible. Verify your GitHub Token permissions.`);
+      throw new Error(`Repository "${repo}" appears empty or contains no supported code files.`);
     }
 
-    const CONCURRENCY_LIMIT = 10; // Boosted for high-fidelity scanning speed
+    const CONCURRENCY_LIMIT = 15; // Increased for performance
     let indexedCount = 0;
     let failCount = 0;
     const bulkOperations = [];
@@ -51,21 +51,22 @@ const processIndexing = async (data, job = null) => {
       
       const contents = await Promise.all(
         batch.map(async (fileInfo) => {
-          const { path, size } = fileInfo;
+          const { path, size, sha } = fileInfo;
           
           if (size > 1024000) { // Skip files > 1MB
             return null;
           }
 
           try {
-            const content = await githubService.getFileContent(owner, repo, path);
+            // HIGH PERFORMANCE: Use SHA instead of path for faster retrieval
+            const content = await githubService.getBlobContent(owner, repo, sha);
             if (!content || content.trim().length === 0) return null;
             
             const ext = path.slice((Math.max(0, path.lastIndexOf(".")) || Infinity) + 1);
             return { repo, owner, path, content, lang: ext };
           } catch (err) {
             failCount++;
-            console.error(`[IndexingService] Failed to fetch ${path}:`, err.message);
+            console.error(`[IndexingService] Failed to fetch ${path} (${sha}):`, err.message);
             return null;
           }
         })

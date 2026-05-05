@@ -32,7 +32,7 @@ exports.indexRepository = catchAsync(async (req, res, next) => {
 
   const cacheKey = `indexed:${owner.toLowerCase()}:${repo.toLowerCase()}`;
   
-  // 2. Pre-flight Check: Check DB status before expensive GitHub traversal
+  // 2. Pre-flight Check: Check DB status
   const existingRepo = await Repository.findOne({ 
     owner: owner.toLowerCase(), 
     name: repo.toLowerCase() 
@@ -47,57 +47,31 @@ exports.indexRepository = catchAsync(async (req, res, next) => {
     });
   }
 
-  // 3. PRE-FLIGHT: Check repository size/file count
-  const filePaths = await githubService.getRepoFiles(owner, repo);
+  // 3. Proactive Rate Limit Check
+  const rateLimit = await githubService.getRateLimit();
+  if (rateLimit && rateLimit.remaining < 100) {
+    return next(new AppError(`GitHub API points nearly exhausted (${rateLimit.remaining} left). Indexing might fail. Please wait until ${new Date(rateLimit.reset * 1000).toLocaleTimeString()}.`, 429));
+  }
+
+  // 4. Queue vs Fallback (Lightweight)
+  const jobId = isRedisConnected() ? `job-${Date.now()}` : `local-${Date.now()}`;
   
-  if (filePaths.length === 0) {
-    return next(new AppError('No indexable code files found in this repository. Supported types: .js, .ts, .jsx, .tsx, .py, .java, .cpp, .go, etc.', 400));
-  }
-
-  if (filePaths.length > 5000) {
-    return next(new AppError(`Repository too large (${filePaths.length} files). Max limit is 5000 files for indexing.`, 400));
-  }
-
-  // 3. Queue vs Fallback
   if (isRedisConnected()) {
-    console.log(`[Queue] Adding ${owner}/${repo} to BullMQ`);
-    const job = await indexQueue.add(`index-${owner}-${repo}`, {
-      owner,
-      repo,
-      preFetchedFiles: filePaths
-    });
-
+    const job = await indexQueue.add(`index-${owner}-${repo}`, { owner, repo }, { jobId });
     cache.set(cacheKey, 'pending', 300);
-
-    return res.status(202).json({
-      status: 'success',
-      message: 'Indexing task added to background queue',
-      data: { jobId: job.id, owner, repo }
-    });
   } else {
-    // FALLBACK: Synchronous indexing for local development
-    console.log(`[Local Fallback] Redis unavailable. Starting synchronous indexing for ${owner}/${repo}`);
-    
-    // We run this "in the background" from the user's perspective by returning 202 immediately
-    // but starting the promise without awaiting it (or using setImmediate)
-    const localJobId = `local:${owner}:${repo}:${Date.now()}`;
-    
-    // Start indexing but don't await (it runs in background node process)
-    indexingService.processIndexing({ 
-      owner, 
-      repo, 
-      preFetchedFiles: filePaths,
-      jobId: localJobId
-    }).catch(err => console.error('[Local Fallback Error]:', err));
-
-    cache.set(cacheKey, 'pending', 300);
-
-    return res.status(202).json({
-      status: 'success',
-      message: 'Redis unavailable: Started local synchronous indexing fallback',
-      data: { jobId: localJobId, owner, repo, fallback: true }
+    // Start indexing in background without awaiting discovery
+    indexingService.processIndexing({ owner, repo, jobId }).catch(err => {
+      console.error('[Local Fallback Error]:', err);
     });
+    cache.set(cacheKey, 'pending', 300);
   }
+
+  res.status(202).json({
+    status: 'success',
+    message: 'Indexing sequence initiated in the neural background.',
+    data: { jobId, owner, repo }
+  });
 });
 
 /**
@@ -195,8 +169,10 @@ exports.searchCode = catchAsync(async (req, res, next) => {
 
   // If searching in a specific repo (Workspace Mode)
   if (repo) {
-    searchQuery.repo = repo;
-    if (req.query.owner) searchQuery.owner = req.query.owner;
+    searchQuery.repo = { $regex: new RegExp(`^${repo}$`, 'i') };
+    if (req.query.owner) {
+      searchQuery.owner = { $regex: new RegExp(`^${req.query.owner}$`, 'i') };
+    }
   }
 
   // 2. Run Search and Count in Parallel

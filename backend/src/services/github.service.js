@@ -160,7 +160,8 @@ class GitHubService {
         })
         .map((item) => ({
           path: item.path,
-          size: item.size
+          size: item.size,
+          sha: item.sha
         }));
 
       return files;
@@ -248,6 +249,31 @@ class GitHubService {
         return null;
       }
       this._handleGitHubError(error, `File ${path} not found in ${owner}/${repo}`);
+    }
+  }
+
+  /**
+   * Fetch and decode content using the Git Blobs API (faster than contents API)
+   */
+  async getBlobContent(owner, repo, sha) {
+    try {
+      const response = await this.client.get(`/repos/${owner}/${repo}/git/blobs/${sha}`);
+      const { data } = response;
+
+      if (!data.content) return '';
+      return Buffer.from(data.content, 'base64').toString('utf-8');
+    } catch (error) {
+      console.error(`[GitHub API] Failed to fetch blob ${sha}:`, error.message);
+      return null;
+    }
+  }
+
+  async getRateLimit() {
+    try {
+      const response = await this.client.get('/rate_limit');
+      return response.data.rate;
+    } catch (error) {
+      return null;
     }
   }
 

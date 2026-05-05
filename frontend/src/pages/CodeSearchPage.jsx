@@ -330,7 +330,16 @@ const CodeSearchPage = () => {
       setLoading(true);
       try {
         const response = await searchCode(debouncedQuery, activeRepo?.repo, activeRepo?.owner);
-        setResults(response.data);
+        
+        // Senior Dev Safety Filter: Ensure results strictly match workspace
+        let filteredResults = response.data;
+        if (activeRepo) {
+          filteredResults = response.data.filter(file => 
+            file.repo.toLowerCase() === activeRepo.repo.toLowerCase()
+          );
+        }
+        
+        setResults(filteredResults);
 
         // Save to local history
         try {
@@ -399,6 +408,7 @@ const CodeSearchPage = () => {
     setActiveRepo(null);
     setIndexStatus(null);
     setShowSuccess(false);
+    setSearchParams({}); // Return to Global Mode
   };
 
   const pollIndexStatus = async (jobId, owner, repo) => {
@@ -421,6 +431,9 @@ const CodeSearchPage = () => {
             setIsIndexing(false);
             setRepoUrl('');
             setShowSuccess(true);
+            
+            // Update URL to persist workspace context
+            setSearchParams({ owner, repo });
             
             // SENIOR DEV AUTO-REFRESH: Instantly search the new workspace
             setTimeout(() => {
@@ -514,6 +527,7 @@ const CodeSearchPage = () => {
       if (cached) {
         setIndexStatus({ type: 'success', message: 'Neural Link Cached!' });
         setActiveRepo({ owner, repo, isIndexed: true });
+        setSearchParams({ owner, repo }); // Persist workspace
         setIsIndexing(false);
         setRepoUrl('');
         if (query) handleSearch(query);
@@ -725,6 +739,7 @@ const CodeSearchPage = () => {
                         whileTap={{ scale: 0.98 }}
                         onClick={() => {
                           setActiveRepo({ owner: repo.owner, repo: repo.name, isIndexed: true });
+                          setSearchParams({ owner: repo.owner, repo: repo.name }); // Persist selection
                           searchInputRef.current?.focus();
                         }}
                         className="flex items-center gap-4 p-4 glass-dark rounded-3xl border border-white/5 text-left group transition-all"
