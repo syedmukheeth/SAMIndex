@@ -6,7 +6,7 @@ import {
   Zap, Hash, ExternalLink, Globe, Sparkles, Command, ArrowRight, X,
   History as HistoryIcon
 } from 'lucide-react';
-import { searchCode, indexRepo, getIndexStatus, getIndexedRepos, getRepoDetails } from '../services/api';
+import { searchCode, indexRepo, getIndexStatus, getIndexedRepos, getRepoDetails, aiExplain } from '../services/api';
 import { useDebounce } from '../hooks/useDebounce';
 import { useSearchParams } from 'react-router-dom';
 import Skeleton from '../components/ui/Skeleton';
@@ -51,8 +51,25 @@ const FeatureCard = ({ icon, title, desc }) => (
 );
 
 const ResultCard = ({ result, idx, copiedId, handleCopy, query }) => {
+  const [explanation, setExplanation] = useState(null);
+  const [isExplaining, setIsExplaining] = useState(false);
+
   const openGitHub = (owner, repo, path, line) => {
     window.open(`https://github.com/${owner}/${repo}/blob/main/${path}${line ? `#L${line}` : ''}`, '_blank');
+  };
+
+  const handleExplain = async () => {
+    if (explanation) return;
+    setIsExplaining(true);
+    try {
+      const code = result.snippets.map(s => s.content).join('\n');
+      const response = await aiExplain(code, result.path);
+      setExplanation(response.data.explanation);
+    } catch (err) {
+      console.error('Neural analysis failed:', err);
+    } finally {
+      setIsExplaining(false);
+    }
   };
 
   return (
@@ -79,7 +96,18 @@ const ResultCard = ({ result, idx, copiedId, handleCopy, query }) => {
           </div>
         </div>
         
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={handleExplain}
+            disabled={isExplaining}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${explanation ? 'bg-accent-blue/10 text-accent-blue border-accent-blue/30' : 'bg-white/5 text-white/40 hover:bg-white/10 border-white/5'}`}
+          >
+            {isExplaining ? <Loader size={16} className="animate-spin" /> : <Sparkles size={16} />}
+            <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">{explanation ? 'Neural Insight Active' : 'Neural Explain'}</span>
+          </button>
+
+          <div className="h-8 w-[1px] bg-white/5 hidden sm:block" />
+
           <div className="text-right hidden sm:block">
              <span className="text-[10px] font-black uppercase tracking-tighter text-white/20 block">Language</span>
              <span className="text-xs font-black text-accent-purple">{result.path.split('.').pop()?.toUpperCase()}</span>
@@ -92,6 +120,30 @@ const ResultCard = ({ result, idx, copiedId, handleCopy, query }) => {
           </button>
         </div>
       </div>
+
+      <AnimatePresence>
+        {explanation && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="px-8 py-6 bg-accent-blue/[0.03] border-b border-white/5 relative overflow-hidden"
+          >
+             <div className="absolute top-0 left-0 w-1 h-full bg-accent-blue/50 shadow-[0_0_15px_rgba(0,112,243,0.5)]" />
+             <div className="flex gap-4 items-start">
+                <div className="p-2 rounded-lg bg-accent-blue/10 text-accent-blue shrink-0">
+                  <Sparkles size={14} className="animate-pulse" />
+                </div>
+                <div className="space-y-1">
+                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-accent-blue/50">Neural Synthesis</span>
+                   <p className="text-sm text-gray-300 leading-relaxed font-medium">
+                     {explanation}
+                   </p>
+                </div>
+             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="p-8 bg-black/20 font-mono text-sm leading-relaxed overflow-x-auto custom-scrollbar">
         {result.snippets.map((snippet, sIdx) => (

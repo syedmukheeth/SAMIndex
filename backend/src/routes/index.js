@@ -28,6 +28,7 @@ router.get('/repo-details/:owner/:repo', codeController.getRepoDetails);
 
 // Code Search route
 router.get('/code-search', authMiddleware.identify, codeController.searchCode);
+router.post('/ai-explain', authMiddleware.identify, codeController.getAIExplanation);
 
 // Fetch route
 router.post('/fetch/:username', fetchController.fetchUserAndRepos);

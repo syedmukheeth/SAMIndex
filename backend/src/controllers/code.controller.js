@@ -316,3 +316,23 @@ exports.getRepoDetails = catchAsync(async (req, res, next) => {
     data: repository
   });
 });
+
+/**
+ * @desc    Get AI-powered explanation for a code snippet
+ * @route   POST /api/v1/ai-explain
+ */
+exports.getAIExplanation = catchAsync(async (req, res, next) => {
+  const { code, fileName } = req.body;
+
+  if (!code) {
+    return next(new AppError('Code snippet is required for neural analysis', 400));
+  }
+
+  const aiService = require('../services/ai.service');
+  const explanation = await aiService.explainCode(code, fileName || 'Unknown File');
+
+  res.status(200).json({
+    status: 'success',
+    data: { explanation }
+  });
+});
