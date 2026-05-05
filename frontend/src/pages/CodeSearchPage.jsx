@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, Code, Book, FileText, Loader, Database, FileCode,
   CircleCheck, CircleAlert, Copy, Check, Terminal, Cpu,
-  Zap, Hash, ExternalLink, Globe, Sparkles, Command, ArrowRight, X,
+  Zap, Hash, ExternalLink, Globe, Sparkles, Command, ArrowRight, ArrowLeft, X,
   History as HistoryIcon
 } from 'lucide-react';
 import { searchCode, indexRepo, getIndexStatus, getIndexedRepos, getRepoDetails, aiExplain } from '../services/api';
