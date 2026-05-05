@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Search, Code, Book, FileText, Loader, Database, 
+  Search, Code, Book, FileText, Loader, Database, FileCode,
   CircleCheck, CircleAlert, Copy, Check, Terminal, Cpu,
   Zap, Hash, ExternalLink, Globe, Sparkles, Command, ArrowRight, X,
   History as HistoryIcon
@@ -12,7 +12,9 @@ import { useSearchParams } from 'react-router-dom';
 import Skeleton from '../components/ui/Skeleton';
 import HistoryPanel from '../components/search/HistoryPanel';
 
-// --- Sub-components (Moved to top for hoist-safety and clarity) ---
+const openGitHub = (owner, repo, path) => {
+  window.open(`https://github.com/${owner}/${repo}/blob/main/${path}`, '_blank');
+};
 
 const HighlightText = ({ text, highlight }) => {
   if (!highlight.trim()) return <span>{text}</span>;
@@ -441,6 +443,12 @@ const CodeSearchPage = () => {
     setIndexStatus(null);
     setShowSuccess(false);
     setSearchParams({}); // Return to Global Mode
+  };
+
+  const handleCopy = (text, id) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   const pollIndexStatus = async (jobId, owner, repo) => {
@@ -975,8 +983,16 @@ const CodeSearchPage = () => {
       <HistoryPanel 
         isOpen={isHistoryOpen} 
         onClose={() => setIsHistoryOpen(false)}
-        onSelectSearch={(query, repo) => {
-          setQuery(query);
+        onSelectSearch={(q, repoPath) => {
+          setQuery(q);
+          if (repoPath && repoPath !== 'Global') {
+            const [owner, repoName] = repoPath.split('/');
+            setActiveRepo({ owner, repo: repoName, isIndexed: true });
+            setSearchParams({ owner, repo: repoName });
+          } else {
+            setActiveRepo(null);
+            setSearchParams({});
+          }
         }}
       />
 
