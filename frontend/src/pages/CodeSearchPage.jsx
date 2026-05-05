@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, Code, Book, FileText, Loader, Database, 
-  CircleCheck, CircleAlert, Copy, Check, Terminal, 
+  CircleCheck, CircleAlert, Copy, Check, Terminal, Cpu,
   Zap, Hash, ExternalLink, Globe, Sparkles, Command, ArrowRight, X,
   History as HistoryIcon
 } from 'lucide-react';
