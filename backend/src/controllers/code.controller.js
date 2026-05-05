@@ -14,10 +14,20 @@ const indexingService = require('../services/indexing.service');
  * @access  Private (API Key Required)
  */
 exports.indexRepository = catchAsync(async (req, res, next) => {
-  const { owner, repo, force = false } = req.body;
+  let { owner, repo, force = false } = req.body;
+
+  // SENIOR DEV AUTO-PARSER: Handle full paths (owner/repo) or full URLs
+  if (repo && !owner && repo.includes('/')) {
+    const cleanPath = repo.trim().replace(/https?:\/\/github\.com\//i, '').replace(/\/$/, '');
+    const parts = cleanPath.split('/').filter(Boolean);
+    if (parts.length >= 2) {
+      owner = parts[0];
+      repo = parts[1];
+    }
+  }
 
   if (!owner || !repo) {
-    return next(new AppError('Please provide owner and repo name', 400));
+    return next(new AppError('Please provide owner and repo name (or a full GitHub URL)', 400));
   }
 
   // 1. Check Cache
