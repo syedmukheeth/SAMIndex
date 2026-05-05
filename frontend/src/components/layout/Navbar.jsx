@@ -103,7 +103,12 @@ const Navbar = () => {
           <div className="hidden md:flex items-center gap-3">
             {user ? (
               <div className="flex items-center gap-4 bg-white/5 pl-4 pr-1.5 py-1.5 rounded-full border border-white/10 group">
-                <span className="text-xs font-bold text-white/50 group-hover:text-white transition-colors">{user.name}</span>
+                <div className="flex flex-col items-end">
+                  <span className="text-xs font-bold text-white group-hover:text-accent-blue transition-colors leading-none mb-1">{user.name}</span>
+                  {user.isGuest && (
+                    <span className="text-[8px] font-black uppercase tracking-widest text-accent-blue/60 bg-accent-blue/10 px-1.5 py-0.5 rounded-full">Guest Mode</span>
+                  )}
+                </div>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}

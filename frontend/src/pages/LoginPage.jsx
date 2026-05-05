@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Lock, ArrowRight, Code, Globe, AlertCircle } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, Code, Globe, AlertCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -142,13 +142,26 @@ const LoginPage = () => {
             Don't have an account? <Link to="/register" className="text-accent-blue font-bold hover:underline">Create one for free</Link>
           </p>
 
-          <div className="mt-6 pt-6 border-t border-white/5 text-center">
-            <Link 
-              to="/" 
-              className="text-[10px] font-bold text-white/20 uppercase tracking-[0.2em] hover:text-white transition-colors"
+          <div className="mt-8 pt-8 border-t border-white/5">
+            <motion.button 
+              whileHover={{ scale: 1.02, backgroundColor: 'rgba(255,255,255,0.03)' }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => {
+                const guestUser = {
+                  name: 'Anonymous Guest',
+                  email: 'guest@samindex.ai',
+                  avatar: 'https://ui-avatars.com/api/?name=Guest&background=333&color=fff',
+                  isGuest: true
+                };
+                localStorage.setItem('user', JSON.stringify(guestUser));
+                localStorage.setItem('token', 'guest-mode-active');
+                navigate('/');
+              }}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black text-white/20 uppercase tracking-[0.3em] hover:text-white transition-all group"
             >
+              <User size={14} className="group-hover:text-accent-blue transition-colors" />
               Continue as Guest
-            </Link>
+            </motion.button>
           </div>
         </div>
       </motion.div>
