@@ -771,7 +771,7 @@ const CodeSearchPage = () => {
                   exit={{ opacity: 0, scale: 0.9 }}
                   className="mt-8 flex flex-col items-center gap-6 relative z-30"
                 >
-                  <div className="flex items-center glass rounded-3xl pl-5 pr-2 py-2 border-white/10 min-w-[340px] md:min-w-[450px] focus-within:border-accent-blue/40 transition-all shadow-2xl relative z-40 bg-black/40 backdrop-blur-md group">
+                  <div className="flex items-center glass-dark rounded-3xl pl-5 pr-2 py-2 border-white/10 min-w-[340px] md:min-w-[450px] focus-within:border-accent-blue/40 transition-all shadow-2xl relative z-40 group">
                     <Globe className="text-white/30 group-focus-within:text-accent-blue transition-colors w-4 h-4 shrink-0" />
                     <input
                       id="index-input"
@@ -792,7 +792,7 @@ const CodeSearchPage = () => {
                     )}
                     <button 
                       onClick={handleIndexRepo}
-                      className="bg-white hover:bg-accent-blue text-black hover:text-white text-[10px] font-black py-2.5 px-6 rounded-2xl transition-all uppercase tracking-widest shadow-lg active:scale-95"
+                      className="bg-accent-blue hover:bg-accent-blue/80 text-white text-[10px] font-black py-2.5 px-6 rounded-2xl transition-all uppercase tracking-widest shadow-lg active:scale-95 border border-white/10 shadow-accent-blue/20"
                     >
                       Index Now
                     </button>

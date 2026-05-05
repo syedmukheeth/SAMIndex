@@ -131,3 +131,23 @@ h1, h2, h3, h4 {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-obsidian-600);
 }
+
+/* --- Premium Input Fixes --- */
+
+/* Fix Chrome/Edge Autofill Background Clash */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.9) inset !important;
+  -webkit-text-fill-color: white !important;
+  caret-color: white !important;
+  transition: background-color 5000s ease-in-out 0s;
+  border-radius: inherit;
+}
+
+/* Firefox Autofill Fix */
+input:autofill {
+  background-color: rgba(0, 0, 0, 0.9) !important;
+  color: white !important;
+}
