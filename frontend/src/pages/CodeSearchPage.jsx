@@ -901,8 +901,32 @@ const CodeSearchPage = () => {
                       </motion.button>
                     ))
                   ) : (
-                    <div className="col-span-full py-8 text-center glass-dark rounded-3xl border border-white/5 border-dashed">
-                      <p className="text-xs text-white/20 italic">No neural workspaces established yet. Index your first repo above.</p>
+                    <div className="col-span-full py-12 text-center glass-dark rounded-[2.5rem] border border-white/5 border-dashed">
+                      <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Database size={20} className="text-white/20" />
+                      </div>
+                      <h4 className="text-sm font-bold mb-2">Neural Brain Empty</h4>
+                      <p className="text-[10px] text-white/30 max-w-[200px] mx-auto leading-relaxed mb-6">
+                        No neural workspaces established yet. You can restore your legacy indexed repos below.
+                      </p>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={async () => {
+                          try {
+                            setLoadingRepos(true);
+                            await import('../services/api').then(m => m.claimOrphans());
+                            window.location.reload();
+                          } catch (err) {
+                            console.error('Migration failed:', err);
+                          } finally {
+                            setLoadingRepos(false);
+                          }
+                        }}
+                        className="px-6 py-2.5 rounded-2xl bg-accent-blue/10 border border-accent-blue/30 text-accent-blue text-[10px] font-black uppercase tracking-widest hover:bg-accent-blue hover:text-white transition-all shadow-[0_0_20px_rgba(59,130,246,0.1)]"
+                      >
+                        Restore My Workspaces
+                      </motion.button>
                     </div>
                   )}
                 </div>
