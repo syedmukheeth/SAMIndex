@@ -19,6 +19,16 @@ const RepoCard = ({ repo }) => {
           <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 bg-white/5 border border-white/5 rounded-full text-white/30">
             Public
           </span>
+          {repo.isIndexed ? (
+            <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400 flex items-center gap-1.5 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              Neural Index
+            </span>
+          ) : (
+            <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 bg-white/5 border border-white/5 rounded-full text-white/20">
+              Legacy Index
+            </span>
+          )}
         </div>
         <ArrowUpRight size={16} className="text-white/20 group-hover:text-white transition-colors" />
       </div>

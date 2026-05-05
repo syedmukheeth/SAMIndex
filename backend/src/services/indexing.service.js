@@ -1,5 +1,6 @@
 const githubService = require('./github.service');
 const CodeFile = require('../models/codeFile.model');
+const Repository = require('../models/repository.model');
 const cache = require('../utils/cache');
 
 /**
@@ -131,6 +132,16 @@ const processIndexing = async (data, job = null) => {
       }, 3600);
     }
     
+    // 5. Update Repository Metadata
+    try {
+      await Repository.findOneAndUpdate(
+        { owner, name: repo },
+        { isIndexed: true, lastIndexedAt: new Date() }
+      );
+    } catch (repoErr) {
+      console.warn(`[IndexingService] Failed to update repo metadata: ${repoErr.message}`);
+    }
+
     console.log(`[IndexingService] COMPLETED: ${indexedCount} indexed, ${failCount} failed.`);
     
     return {

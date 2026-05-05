@@ -38,6 +38,13 @@ const repositorySchema = new mongoose.Schema(
       type: Number,
       unique: true,
     },
+    isIndexed: {
+      type: Boolean,
+      default: false,
+    },
+    lastIndexedAt: {
+      type: Date,
+    },
   },
   {
     timestamps: true,

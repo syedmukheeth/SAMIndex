@@ -6,7 +6,7 @@ import {
   Zap, Hash, ExternalLink, Globe, Sparkles, Command, ArrowRight, X,
   History as HistoryIcon
 } from 'lucide-react';
-import { searchCode, indexRepo, getIndexStatus } from '../services/api';
+import { searchCode, indexRepo, getIndexStatus, getIndexedRepos } from '../services/api';
 import { useDebounce } from '../hooks/useDebounce';
 import { useSearchParams } from 'react-router-dom';
 import Skeleton from '../components/ui/Skeleton';
@@ -209,6 +209,8 @@ const CodeSearchPage = () => {
   const [user, setUser] = useState(null);
   const [activeRepo, setActiveRepo] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [indexedRepos, setIndexedRepos] = useState([]);
+  const [loadingRepos, setLoadingRepos] = useState(false);
   const searchInputRef = React.useRef(null);
 
   const debouncedQuery = useDebounce(query, 500);
@@ -247,6 +249,23 @@ const CodeSearchPage = () => {
       }
     }
   }, [searchParams, setSearchParams]);
+  
+  // NEW: Fetch all indexed repos to show status
+  useEffect(() => {
+    const fetchIndexedRepos = async () => {
+      setLoadingRepos(true);
+      try {
+        const response = await getIndexedRepos(100);
+        const repos = response.data.repositories.filter(r => r.isIndexed);
+        setIndexedRepos(repos);
+      } catch (err) {
+        console.error('Failed to fetch indexed repos:', err);
+      } finally {
+        setLoadingRepos(false);
+      }
+    };
+    fetchIndexedRepos();
+  }, [isIndexing]); // Re-fetch when indexing finishes
 
   useEffect(() => {
     if (searchParams.get('history') === 'true') {
@@ -533,7 +552,27 @@ const CodeSearchPage = () => {
             className="text-white/40 text-lg md:text-xl max-w-2xl mx-auto font-medium leading-relaxed"
           >
             {activeRepo ? (
-              `Neural scan complete. You are now searching within the context of ${activeRepo.owner}/${activeRepo.repo}.`
+              <div className="flex flex-col items-center gap-4">
+                <span>
+                  {activeRepo.isIndexed 
+                    ? `Neural scan complete. You are now searching within the context of ${activeRepo.owner}/${activeRepo.repo}.`
+                    : `Legacy search mode. Neural indexing is recommended for ${activeRepo.owner}/${activeRepo.repo}.`}
+                </span>
+                {activeRepo.isIndexed ? (
+                   <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-[0.2em] shadow-[0_0_20px_rgba(16,185,129,0.1)]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                      Neural Link Established
+                   </div>
+                ) : (
+                  <button 
+                    onClick={handleIndexRepo}
+                    className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-amber-500/20 transition-all"
+                  >
+                    <CircleAlert size={12} />
+                    Neural Indexing Required
+                  </button>
+                )}
+              </div>
             ) : (
               "The lightning-fast code analysis engine for modern engineering teams. Deep-link into any repository with neural-grade precision."
             )}
@@ -617,6 +656,57 @@ const CodeSearchPage = () => {
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {/* Neural Workspace Discovery Section */}
+            {!activeRepo && !query && (
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-16 space-y-6"
+              >
+                <div className="flex items-center justify-between px-2">
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white/30 flex items-center gap-2">
+                    <Cpu size={14} className="text-accent-blue" />
+                    Recently Indexed Workspaces
+                  </h3>
+                  {indexedRepos.length > 0 && (
+                    <span className="text-[10px] font-bold text-accent-blue/60">{indexedRepos.length} Repos Online</span>
+                  )}
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {loadingRepos ? (
+                    [1, 2, 3].map(i => <div key={i} className="h-24 glass-dark rounded-3xl border border-white/5 animate-pulse" />)
+                  ) : indexedRepos.length > 0 ? (
+                    indexedRepos.map(repo => (
+                      <motion.button
+                        key={repo.githubId}
+                        whileHover={{ scale: 1.02, borderColor: 'rgba(47,129,247,0.3)' }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => {
+                          setActiveRepo({ owner: repo.owner, repo: repo.name, isIndexed: true });
+                          searchInputRef.current?.focus();
+                        }}
+                        className="flex items-center gap-4 p-4 glass-dark rounded-3xl border border-white/5 text-left group transition-all"
+                      >
+                        <div className="w-10 h-10 rounded-xl bg-accent-blue/10 flex items-center justify-center text-accent-blue group-hover:bg-accent-blue/20 transition-colors">
+                          <Book size={18} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold truncate">{repo.name}</p>
+                          <p className="text-[10px] text-white/30 truncate">{repo.owner}</p>
+                        </div>
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                      </motion.button>
+                    ))
+                  ) : (
+                    <div className="col-span-full py-8 text-center glass-dark rounded-3xl border border-white/5 border-dashed">
+                      <p className="text-xs text-white/20 italic">No neural workspaces established yet. Index your first repo above.</p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
           </motion.div>
         </section>
 

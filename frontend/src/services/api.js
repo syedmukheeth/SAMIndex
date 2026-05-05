@@ -59,4 +59,9 @@ export const getIndexStatus = async (jobId) => {
   return data;
 };
 
+export const getIndexedRepos = async (limit = 100) => {
+  const { data } = await api.get(`/search?limit=${limit}&sort=score`);
+  return data;
+};
+
 export default api;
