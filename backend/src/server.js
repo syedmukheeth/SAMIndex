@@ -22,7 +22,10 @@ require('./workers/index.worker');
 
 console.log('Environment variables loaded.');
 if (process.env.GITHUB_TOKEN) {
-  console.log(`GITHUB_TOKEN detected (Length: ${process.env.GITHUB_TOKEN.length})`);
+  const token = process.env.GITHUB_TOKEN.trim();
+  console.log(`[Diagnostic] GITHUB_TOKEN detected.`);
+  console.log(`[Diagnostic] Length: ${token.length}`);
+  console.log(`[Diagnostic] Format Check: ${token.substring(0, 3)}...${token.substring(token.length - 3)}`);
 } else {
   console.error('CRITICAL: GITHUB_TOKEN not found in environment!');
 }
