@@ -114,5 +114,5 @@ SAMIndex implements a multi-layer security model:
 
 ---
 
-<p align="center">Built with 🖤 by the SAMIndex Team</p>
-<p align="center"><i>Intelligence that scales with your code.</i></p>
+<p align="center">Developed with 🖤 by <b><a href="https://www.linkedin.com/in/syedmukheeth/">Syed Mukheeth</a></b></p>
+<p align="center"><i>A solo-engineered masterpiece in code intelligence.</i></p>
