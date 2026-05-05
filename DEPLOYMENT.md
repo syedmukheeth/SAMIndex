@@ -1,57 +1,79 @@
-# 🚀 Deployment Guide: SAMIndex
+# 🚢 SAMIndex Deployment Guide
+### Production-Grade Deployment Strategy
 
-This guide will help you deploy your full-stack application with the **Frontend on Vercel** and the **Backend on Render**.
-
----
-
-## 1. Backend: Render Deployment
-Render will host your Express API and handle the connection to MongoDB and GitHub.
-
-### Step-by-Step:
-1.  **Create a New Web Service**:
-    *   Go to [dashboard.render.com](https://dashboard.render.com).
-    *   Connect your GitHub repository.
-2.  **Configure Service**:
-    *   **Name**: `samindex-api` (or your choice).
-    *   **Root Directory**: `backend` (Important!).
-    *   **Environment**: `Node`.
-    *   **Build Command**: `npm install`.
-    *   **Start Command**: `npm start`.
-3.  **Environment Variables**:
-    Add the following in the **Environment** tab:
-    *   `NODE_ENV`: `production`
-    *   `PORT`: `10000` (Render's default)
-    *   `MONGODB_URI`: Your MongoDB connection string.
-    *   `GITHUB_TOKEN`: Your GitHub PAT.
-    *   `JWT_SECRET`: A secure random string.
-    *   `GOOGLE_CLIENT_ID`: (From Google Console)
-    *   `GOOGLE_CLIENT_SECRET`: (From Google Console)
-    *   `FRONTEND_URL`: Your Vercel URL (e.g., `https://samindex.vercel.app`).
-4.  **Copy the URL**: Once deployed, copy your Render URL (e.g., `https://samindex-api.onrender.com`).
+This document outlines the professional deployment workflow for the SAMIndex ecosystem.
 
 ---
 
-## 2. Frontend: Vercel Deployment
-Vercel will host your React frontend and provide sub-millisecond load times.
+## 🏗 Architecture Overview
+SAMIndex uses a split-stack architecture optimized for low-latency search and high-throughput background processing.
 
-### Step-by-Step:
-1.  **Create a New Project**:
-    *   Go to [vercel.com](https://vercel.com).
-    *   Import your GitHub repository.
-2.  **Configure Project**:
-    *   **Framework Preset**: `Vite`.
-    *   **Root Directory**: `frontend` (Important!).
-3.  **Environment Variables**:
-    Add the following in the **Environment Variables** section:
-    *   `VITE_API_URL`: `https://your-render-url.onrender.com/api/v1` (The URL you copied from Render).
-4.  **Deploy**: Click **Deploy**.
+- **Frontend**: Single Page Application (SPA) hosted on Vercel.
+- **Backend**: Node.js REST API hosted on Render.
+- **Data Layer**: MongoDB Atlas (Persistent) + Upstash Redis (Volatile/Queue).
+- **Background Layer**: BullMQ workers for asynchronous repository scanning.
 
 ---
 
-## 3. Important Post-Deployment Notes
-*   **Google OAuth Redirects**:
-    *   In your Google Cloud Console, add `https://your-render-url.onrender.com/api/v1/auth/google/callback` to the **Authorized redirect URIs**.
-*   **CORS**:
-    *   The backend is configured to allow requests from your frontend URL via the `FRONTEND_URL` environment variable. Ensure this matches exactly.
-*   **Redis (Optional)**:
-    *   For background indexing of large repos, you can add a **Redis** instance on Render and add `REDIS_URL` to your backend environment variables. If not provided, the app will use the synchronous local fallback.
+## 🛠 Backend Deployment (Render)
+
+### 1. Environment Configuration
+Ensure the following variables are set in your Render dashboard:
+
+| Variable | Description | Recommended Value |
+| :--- | :--- | :--- |
+| `NODE_ENV` | Environment mode | `production` |
+| `MONGODB_URI` | Database connection | MongoDB Atlas Connection String |
+| `JWT_SECRET` | Auth signing key | 32+ character random string |
+| `GOOGLE_CALLBACK_URL` | OAuth redirect | `https://your-api.onrender.com/api/v1/auth/google/callback` |
+| `REDIS_TLS` | SSL for Redis | `true` (Required for Upstash) |
+| `GITHUB_TOKEN` | Repository Access | GitHub Personal Access Token |
+
+### 2. Port Binding
+The backend is configured to bind to the `PORT` environment variable (default: `5000`). Render automatically provides this.
+
+---
+
+## 🎨 Frontend Deployment (Vercel)
+
+### 1. Build Settings
+- **Framework Preset**: `Vite`
+- **Build Command**: `npm run build`
+- **Output Directory**: `dist`
+
+### 2. Routing Configuration
+To support SPA routing, a `vercel.json` is required at the project root to redirect all 404s to `index.html`.
+
+```json
+{
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}
+```
+
+---
+
+## 🔐 Google OAuth Setup (Production)
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/).
+2. Navigate to **APIs & Services > Credentials**.
+3. Update your **OAuth 2.0 Client ID**:
+   - **Authorized JavaScript origins**: `https://sam-index.vercel.app`
+   - **Authorized redirect URIs**: `https://samindex-api.onrender.com/api/v1/auth/google/callback`
+4. **IMPORTANT**: Ensure the Client Secret in Render matches the newly generated secret from Google Console.
+
+---
+
+## 🛠 Troubleshooting & Maintenance
+
+### 1. Invalid Grant / Token Error
+- Verify that `GOOGLE_CALLBACK_URL` is **identical** in both Render and Google Console.
+- Ensure `NODE_ENV` is NOT `development` if you want production-level security (or set it to `development` for verbose error logs).
+- Check for trailing spaces in environment variables.
+
+### 2. Redis Connection Issues
+- Ensure `REDIS_TLS` is set to `true`.
+- Verify that your Upstash Redis host and port are correct.
+
+---
+
+<p align="center"><i>SAMIndex Deployment v1.0 — Managed by Antigravity</i></p>

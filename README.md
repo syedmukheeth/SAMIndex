@@ -1,88 +1,118 @@
-# SamIndex 🚀
+# <p align="center"><img src="./assets/logo.png" width="120" alt="SAMIndex Logo"></p>
+# <p align="center">SAMIndex</p>
+### <p align="center">Next-Generation Code Intelligence & Repository Indexing</p>
 
-A production-grade GitHub search engine and authority ranking system built with the **MERN** stack (MongoDB, Express, React, Node.js).
+<p align="center">
+  <img src="https://img.shields.io/badge/Version-1.0.0-blue?style=for-the-badge&logo=none" alt="Version">
+  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge&logo=none" alt="License">
+  <img src="https://img.shields.io/badge/Frontend-Vite%20%2B%20React-61DAFB?style=for-the-badge&logo=react" alt="Frontend">
+  <img src="https://img.shields.io/badge/Backend-Node.js%20%2B%20Express-339933?style=for-the-badge&logo=node.js" alt="Backend">
+</p>
 
-## 🌟 Features
+---
 
-- **High-Performance Search**: Combined search for users and repositories using MongoDB full-text indexing.
-- **Authority Ranking**: Proprietary formula `(followers * 2) + (repoStars * 1.5)` to rank professional impact.
-- **Real-time Ingestion**: Sync user data and their top 100 repositories directly from GitHub API.
-- **Optimized UI**: GitHub-inspired design with debounced live search, skeleton loaders, and smooth transitions.
-- **Production Infrastructure**:
-  - Centralized Error Handling
-  - In-memory Caching (Node-Cache)
-  - Rate Limiting & Security Headers (Helmet, CORS)
-  - Background Cron Jobs for Daily Data Refresh
+## 🌌 Overview
+**SAMIndex** is a high-fidelity code intelligence platform designed for senior developers who need instant, neural-powered insights across their entire repository ecosystem. By leveraging advanced indexing algorithms and a "Digital Obsidian" glassmorphism aesthetic, SAMIndex transforms how you explore, search, and understand complex codebases.
 
-## 🛠️ Tech Stack
+## ✨ Key Features
+- 🧠 **Neural Repository Indexing**: High-speed background scanning using BullMQ and Redis for massive repository support.
+- 🔍 **Hybrid Search Engine**: Seamlessly switch between **Global Search** (cross-repo) and **Workspace Mode** (repo-locked) for targeted exploration.
+- 💎 **Digital Obsidian UI**: A premium, state-of-the-art interface built with glassmorphism, fluid animations (Framer Motion), and dark-mode optimization.
+- 🔐 **Secure Intelligence**: Native Google OAuth 2.0 integration and secure "Guest Mode" for flexible access.
+- ⚡ **Real-time Synchronization**: Live progress tracking during indexing with neural-style scanning animations.
 
-- **Frontend**: React 19, Vite, Tailwind CSS 4, Framer Motion, Lucide-React.
-- **Backend**: Node.js, Express, MongoDB, Mongoose.
-- **Utilities**: Node-cron (Automation), Axios (API), Node-cache (Performance).
+---
 
-## 🚀 Getting Started
+## 🛠 Tech Stack
 
-### Prerequisites
+### Frontend
+- **Framework**: [React 18](https://reactjs.org/) + [Vite](https://vitejs.dev/)
+- **Styling**: Vanilla CSS (Premium Custom Tokens)
+- **Animations**: [Framer Motion](https://www.framer.com/motion/)
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **State Management**: React Hooks & Context API
 
+### Backend
+- **Runtime**: [Node.js](https://nodejs.org/)
+- **Framework**: [Express.js](https://expressjs.com/)
+- **Database**: [MongoDB Atlas](https://www.mongodb.com/atlas/database)
+- **Caching & Queues**: [Upstash Redis](https://upstash.com/) + [BullMQ](https://docs.bullmq.io/)
+- **Authentication**: [Passport.js](http://www.passportjs.org/) (Google Strategy) + JWT
+
+### Infrastructure
+- **Frontend Hosting**: [Vercel](https://vercel.com/)
+- **Backend Hosting**: [Render](https://render.com/)
+- **Version Control**: Git & GitHub
+
+---
+
+## 🚀 Quick Start
+
+### 1. Prerequisites
 - Node.js (v18+)
-- MongoDB (Running locally or via Atlas)
-- GitHub Personal Access Token (Optional, for higher rate limits)
+- MongoDB connection string
+- Upstash Redis credentials
+- GitHub Personal Access Token (for indexing)
+- Google OAuth Credentials
 
-### Installation
+### 2. Installation
+```bash
+# Clone the repository
+git clone https://github.com/syedmukheeth/SAMIndex.git
 
-1. **Clone the repository**
-   ```bash
-   git clone <repo-url>
-   cd SAMIndex
-   ```
+# Install Backend dependencies
+cd backend
+npm install
 
-2. **Setup Backend**
-   ```bash
-   cd backend
-   npm install
-   cp .env.example .env
-   # Edit .env with your MongoDB URI and GitHub Token
-   npm run dev
-   ```
-
-3. **Setup Frontend**
-   ```bash
-   cd ../frontend
-   npm install
-   npm run dev
-   ```
-
-## 📡 API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/v1/fetch/:username` | Ingest/Sync user data from GitHub |
-| `GET`  | `/api/v1/search?q=` | Combined text search (Users + Repos) |
-| `GET`  | `/api/v1/user/:username` | Get detailed profile & repositories |
-| `GET`  | `/api/v1/health` | API Health check |
-
-## 📂 Project Structure
-
-```text
-SAMIndex/
-├── backend/
-│   ├── src/
-│   │   ├── config/       # Database connection
-│   │   ├── controllers/  # Request handlers
-│   │   ├── models/       # Mongoose schemas
-│   │   ├── routes/       # API endpoints
-│   │   ├── services/     # GitHub API & Cron logic
-│   │   ├── utils/        # Error & Ranking helpers
-│   │   └── server.js     # Entry point
-├── frontend/
-│   ├── src/
-│   │   ├── components/   # UI & Layout components
-│   │   ├── pages/        # Search & Profile views
-│   │   ├── services/     # API Client
-│   │   ├── hooks/        # Custom React hooks
-│   │   └── App.jsx       # Routing
+# Install Frontend dependencies
+cd ../frontend
+npm install
 ```
 
-## ⚖️ License
+### 3. Environment Setup
+Create a `.env` file in the `backend` directory based on `.env.example`:
+```env
+PORT=5000
+MONGODB_URI=your_mongodb_uri
+JWT_SECRET=your_jwt_secret
+GOOGLE_CLIENT_ID=your_google_id
+GOOGLE_CLIENT_SECRET=your_google_secret
+GOOGLE_CALLBACK_URL=http://localhost:5000/api/v1/auth/google/callback
+FRONTEND_URL=http://localhost:5173
+GITHUB_TOKEN=your_github_token
+REDIS_HOST=your_redis_host
+REDIS_PORT=your_redis_port
+REDIS_PASSWORD=your_redis_password
+REDIS_TLS=true
+```
 
-MIT
+### 4. Running Locally
+```bash
+# Start Backend
+cd backend
+npm run dev
+
+# Start Frontend (new terminal)
+cd frontend
+npm run dev
+```
+
+---
+
+## 🛡 Security & Authentication
+SAMIndex implements a multi-layer security model:
+1. **JWT Strategy**: Stateless authentication via encrypted JSON Web Tokens.
+2. **OAuth 2.0**: Secure social login via Google.
+3. **CORS Policies**: Strict origin filtering to protect API integrity.
+4. **Helmet.js**: Enhanced security headers for production safety.
+
+## 📈 Roadmap
+- [ ] AI-Powered Code Summarization (GPT-4 Integration)
+- [ ] Deep Link Search (specific line-level navigation)
+- [ ] Team Collaboration Workspaces
+- [ ] Multi-provider OAuth (GitHub, GitLab, Bitbucket)
+
+---
+
+<p align="center">Built with 🖤 by the SAMIndex Team</p>
+<p align="center"><i>Intelligence that scales with your code.</i></p>
