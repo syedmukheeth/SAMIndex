@@ -216,6 +216,21 @@ const CodeSearchPage = () => {
   const debouncedQuery = useDebounce(query, 500);
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // NEW: Instant Workspace Previewing (Senior Dev UX)
+  const previewRepo = useMemo(() => {
+    if (activeRepo) return activeRepo;
+    if (!repoUrl.trim()) return null;
+    
+    try {
+      let path = repoUrl.trim().replace(/https?:\/\/github\.com\//i, '').replace(/\/$/, '');
+      const parts = path.split('/').filter(Boolean);
+      if (parts.length >= 2) {
+        return { owner: parts[0], repo: parts[1], isPreview: true };
+      }
+    } catch (e) {}
+    return null;
+  }, [activeRepo, repoUrl]);
+
   useEffect(() => {
     // Check for token in URL (from Google OAuth redirect)
     const token = searchParams.get('token');
@@ -329,13 +344,14 @@ const CodeSearchPage = () => {
 
       setLoading(true);
       try {
-        const response = await searchCode(debouncedQuery, activeRepo?.repo, activeRepo?.owner);
+        const target = activeRepo || previewRepo;
+        const response = await searchCode(debouncedQuery, target?.repo, target?.owner);
         
         // Senior Dev Safety Filter: Ensure results strictly match workspace
         let filteredResults = response.data;
-        if (activeRepo) {
+        if (target) {
           filteredResults = response.data.filter(file => 
-            file.repo.toLowerCase() === activeRepo.repo.toLowerCase()
+            file.repo.toLowerCase() === target.repo.toLowerCase()
           );
         }
         
@@ -652,7 +668,7 @@ const CodeSearchPage = () => {
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder={activeRepo ? `Search ${activeRepo.repo}...` : "Ask anything about the codebase..."}
+                    placeholder={previewRepo ? `Search ${previewRepo.repo}...` : (activeRepo ? `Search ${activeRepo.repo}...` : "Ask anything about the codebase...")}
                     className="w-full bg-transparent text-2xl md:text-3xl font-semibold placeholder-white/5 focus:outline-none relative z-0 pl-12"
                   />
                 </div>
