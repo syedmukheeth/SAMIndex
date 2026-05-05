@@ -3,9 +3,6 @@ const dotenv = require("dotenv");
 
 dotenv.config();
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
 /**
  * @desc    Generate an explanation for a code snippet
  * @param   {string} code - The code snippet to explain
@@ -14,9 +11,14 @@ const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
  */
 exports.explainCode = async (code, fileName) => {
   try {
-    if (!process.env.GEMINI_API_KEY) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
       throw new Error("GEMINI_API_KEY is missing from environment variables.");
     }
+
+    // Initialize inside the call to ensure it has the latest ENV vars
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `
       Explain this code snippet from "${fileName}" in 2 simple, non-technical sentences.
