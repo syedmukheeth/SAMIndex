@@ -370,18 +370,31 @@ const CodeSearchPage = () => {
           setIndexProgress(100);
           setTimeout(() => {
             const count = result?.filesIndexed || 0;
-            setIndexStatus({ type: 'success', message: `Successfully Indexed ${count} files` });
+            setIndexStatus({ type: 'success', message: `Successfully Indexed ${count} files!` });
+            
+            // Lock the workspace
             setActiveRepo({ owner, repo });
             setIsIndexing(false);
             setRepoUrl('');
             setShowSuccess(true);
-            // Focus search input after a short delay for the transition
-            setTimeout(() => searchInputRef.current?.focus(), 500);
+            
+            // SENIOR DEV AUTO-REFRESH: Instantly search the new workspace
+            setTimeout(() => {
+              if (query) {
+                handleSearch(query);
+              } else {
+                searchInputRef.current?.focus();
+              }
+            }, 500);
           }, 1000);
-        } else if (state === 'failed') {
+        } else if (state === 'failed' || state === 'error') {
           clearInterval(interval);
-          setIndexStatus({ type: 'error', message: failedReason || 'Indexing failed' });
-          setIsIndexing(false);
+          const errorMsg = failedReason || 'GitHub Access Denied or Empty Repo';
+          setIndexStatus({ 
+            type: 'error', 
+            message: `CRITICAL ERROR: ${errorMsg}. Please verify your GITHUB_TOKEN on Render.` 
+          });
+          // Note: Modal stays open for error review
         } else {
           const count = result?.filesIndexed || 0;
           let msg = `Indexing... (${count} files indexed)`;
