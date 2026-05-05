@@ -6,13 +6,16 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   const callbackURL = process.env.GOOGLE_CALLBACK_URL || '/api/v1/auth/google/callback';
   console.log(`[Passport] Initializing Google Strategy with callback: ${callbackURL}`);
   
+  console.log(`[Passport] Credentials check: ID=${!!process.env.GOOGLE_CLIENT_ID}, Secret=${!!process.env.GOOGLE_CLIENT_SECRET}`);
+  
   passport.use(
     new GoogleStrategy(
       {
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
         callbackURL: 'https://samindex-api.onrender.com/api/v1/auth/google/callback',
-        proxy: true
+        proxy: true,
+        state: false // Disable state to avoid session-related 'invalid_grant'
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
