@@ -168,15 +168,15 @@ const IndexingModal = ({ status, progress, repo, isOpen, onComplete }) => {
               </div>
 
               {/* Real-time File Counter */}
-              <div className="flex items-center justify-center gap-2 text-xs font-mono text-white/40">
-                 <Database size={14} className="text-accent-blue" />
-                 <span>{status?.includes('Successfully Indexed') ? status : `${Math.floor((progress / 100) * 50)} files indexed...`}</span>
-              </div>
-
-              {/* Status Indicator */}
-              <div className="flex items-center justify-center gap-2 text-xs font-mono text-white/40">
-                  <Database size={14} className="text-accent-blue" />
-                  <span>{status?.includes('Successfully Indexed') ? status : `${Math.floor((progress / 100) * 50)} files indexed...`}</span>
+              <div className="flex flex-col items-center gap-3">
+                 <div className="flex items-center justify-center gap-2 text-xs font-mono text-white/40">
+                   <Database size={14} className="text-accent-blue" />
+                   <span>{status?.includes('Successfully Indexed') ? status : `${Math.floor((progress / 100) * 50)} files indexed...`}</span>
+                 </div>
+                 <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-accent-blue/10 border border-accent-blue/20">
+                   <div className="w-1 h-1 rounded-full bg-accent-blue animate-pulse" />
+                   <span className="text-[8px] font-black tracking-widest text-accent-blue uppercase">Streaming to MongoDB Brain</span>
+                 </div>
               </div>
 
               <motion.div 
@@ -880,17 +880,53 @@ const CodeSearchPage = () => {
               key="results"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="grid grid-cols-1 gap-8"
+              className="space-y-12"
             >
                <div className="flex items-center justify-between px-2 mb-4">
                   <h2 className="text-xs font-black uppercase tracking-[0.2em] text-white/30 flex items-center gap-3">
                     <Hash size={14} className="text-accent-blue" />
                     {results.length} Contextual Matches
                   </h2>
+                  <div className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-white/2 border border-white/5 backdrop-blur-md">
+                     <Database size={12} className="text-accent-blue" />
+                     <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Neural MongoDB Brain</span>
+                  </div>
                </div>
-               {results.map((result, idx) => (
-                 <ResultCard key={idx} result={result} idx={idx} copiedId={copiedId} handleCopy={handleCopy} query={debouncedQuery} />
-               ))}
+
+               {/* Tree-Style Grouped Results */}
+               {Object.entries(groupedResults).map(([repoKey, items]) => (
+                <div key={repoKey} className="space-y-6">
+                  {/* Repo Header */}
+                  <div className="flex items-center gap-3 px-6 py-4 bg-white/5 rounded-3xl border border-white/10 backdrop-blur-md">
+                    <div className="w-10 h-10 rounded-xl bg-accent-blue/10 flex items-center justify-center border border-accent-blue/20">
+                      <Globe className="text-accent-blue" size={20} />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-black text-accent-blue uppercase tracking-widest leading-none mb-1">Workspace</span>
+                      <span className="text-xl font-bold text-white tracking-tight">{repoKey}</span>
+                    </div>
+                    <div className="ml-auto flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/5">
+                      <FileCode size={12} className="text-gray-500" />
+                      <span className="text-[10px] font-bold text-gray-400">
+                        {items.length} file matches
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-6">
+                    {items.map((result, index) => (
+                      <ResultCard 
+                        key={`${result.owner}-${result.repo}-${result.path}-${index}`} 
+                        result={result} 
+                        idx={index} 
+                        copiedId={copiedId} 
+                        handleCopy={handleCopy} 
+                        query={debouncedQuery} 
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
             </motion.div>
           ) : query ? (
             <motion.div 
@@ -954,8 +990,18 @@ const CodeSearchPage = () => {
               </p>
             </div>
             <p className="text-xs text-white/20 font-medium max-w-sm leading-relaxed">
-              Decentralized repository indexing with sub-millisecond contextual retrieval and advanced dependency mapping.
+              Decentralized repository indexing with sub-millisecond contextual retrieval and advanced dependency mapping. Powered by the **Neural MongoDB Brain**.
             </p>
+            <div className="flex items-center justify-center md:justify-start gap-4 pt-2">
+                <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                   <span className="text-[9px] font-bold text-emerald-500/60 uppercase tracking-widest">DB CLOUD SYNC: ACTIVE</span>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-accent-blue/5 border border-accent-blue/10">
+                   <Database size={10} className="text-accent-blue/60" />
+                   <span className="text-[9px] font-bold text-accent-blue/60 uppercase tracking-widest">MONGODB BRAIN V2.0</span>
+                </div>
+              </div>
           </div>
           
           <motion.div 
