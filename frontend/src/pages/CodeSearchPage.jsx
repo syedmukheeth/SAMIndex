@@ -419,6 +419,14 @@ const CodeSearchPage = () => {
   };
 
   const handleIndexRepo = async () => {
+    // SENIOR DEV CHECK: Must be logged in to write to the index
+    if (!localStorage.getItem('token')) {
+      setIndexStatus({ type: 'error', message: 'LOGIN REQUIRED: Please sign in to index repositories.' });
+      setIsIndexing(true); // Show the modal so they see the error
+      setTimeout(() => setIsIndexing(false), 4000);
+      return;
+    }
+
     if (!repoUrl.trim()) return;
     setIsIndexing(true);
     setIndexProgress(0);
