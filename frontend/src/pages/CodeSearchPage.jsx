@@ -252,7 +252,7 @@ const CodeSearchPage = () => {
     if (!searchQuery) return;
     setLoading(true);
     try {
-      const response = await searchCode(searchQuery);
+      const response = await searchCode(searchQuery, activeRepo?.repo);
       setResults(response.data);
     } catch (error) {
       console.error('Code search failed:', error);
@@ -270,7 +270,7 @@ const CodeSearchPage = () => {
 
       setLoading(true);
       try {
-        const response = await searchCode(debouncedQuery);
+        const response = await searchCode(debouncedQuery, activeRepo?.repo);
         setResults(response.data);
 
         // Save to local history
