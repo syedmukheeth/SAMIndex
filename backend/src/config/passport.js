@@ -15,18 +15,24 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
         proxy: true
       },
       async (accessToken, refreshToken, profile, done) => {
-        console.log(`[Passport] Google callback triggered for: ${profile.emails[0].value}`);
         try {
           const { id, displayName, emails, photos } = profile;
+          
+          if (!emails || emails.length === 0) {
+            return done(new Error('No email found in Google profile'), null);
+          }
+
           const email = emails[0].value;
-          const avatar = photos[0].value;
+          const avatar = (photos && photos.length > 0) ? photos[0].value : `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random`;
+
+          console.log(`[Passport] Processing login for: ${email}`);
 
           // Upsert User
           let user = await User.findOne({ email });
 
           if (user) {
             // Update existing user if needed
-            if (user.provider !== 'google') {
+            if (!user.googleId || user.provider !== 'google') {
               user.provider = 'google';
               user.googleId = id;
               user.avatar = avatar || user.avatar;
@@ -46,6 +52,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 
           done(null, user);
         } catch (err) {
+          console.error('[Passport] Error in Google Strategy:', err);
           done(err, null);
         }
       }

@@ -27,6 +27,9 @@ const sendErrorDev = (err, res) => {
 };
 
 const sendErrorProd = (err, res) => {
+  // Log error for developers to see in Render logs
+  console.error('ERROR 💥', err);
+
   // Operational, trusted error: send message to client
   if (err.isOperational) {
     res.status(err.statusCode).json({
@@ -34,8 +37,7 @@ const sendErrorProd = (err, res) => {
       message: err.message,
     });
   } else {
-    // Programming or other unknown error: don't leak error details
-    console.error('ERROR 💥', err);
+    // Programming or other unknown error: don't leak error details to client
     res.status(500).json({
       status: 'error',
       message: 'Something went very wrong!',
