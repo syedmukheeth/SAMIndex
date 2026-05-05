@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Lock, User, ArrowRight, Code, Globe, AlertCircle } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, Code, Globe, AlertCircle, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -53,9 +53,17 @@ const LoginPage = () => {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md"
+        className="max-w-md w-full relative z-10"
       >
-        <div className="glass-dark border border-white/5 rounded-[2.5rem] p-10 premium-shadow">
+        <div className="glass-dark border border-white/10 rounded-[3rem] p-10 relative overflow-hidden">
+          {/* Close Button */}
+          <Link 
+            to="/" 
+            className="absolute top-8 right-8 p-2 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 text-white/20 hover:text-white transition-all z-20"
+          >
+            <X size={18} />
+          </Link>
+
           <div className="text-center mb-10">
             <h2 className="text-3xl font-black mb-3 tracking-tight">Welcome Back</h2>
             <p className="text-white/40 text-sm">Sign in to continue your code intelligence journey</p>

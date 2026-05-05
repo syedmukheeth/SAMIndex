@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Lock, User, ArrowRight, Globe, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, Globe, AlertCircle, CheckCircle2, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -72,7 +72,14 @@ const RegisterPage = () => {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md"
       >
-        <div className="glass-dark border border-white/5 rounded-[2.5rem] p-10 premium-shadow">
+        <div className="glass-dark border border-white/5 rounded-[2.5rem] p-10 premium-shadow relative">
+          <Link 
+            to="/" 
+            className="absolute top-8 right-8 p-2 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 text-white/20 hover:text-white transition-all z-20"
+          >
+            <X size={18} />
+          </Link>
+
           <div className="text-center mb-10">
             <h2 className="text-3xl font-black mb-3 tracking-tight">Create Account</h2>
             <p className="text-white/40 text-sm">Join the next generation of code intelligence</p>
