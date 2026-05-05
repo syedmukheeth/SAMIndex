@@ -14,10 +14,13 @@ const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
  */
 exports.explainCode = async (code, fileName) => {
   try {
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY is missing from environment variables.");
+    }
+
     const prompt = `
-      You are a Senior Software Engineer. Explain the following code snippet from the file "${fileName}" in a concise, high-level way (max 2-3 sentences).
-      Focus on what the code does and its role in the application.
-      Avoid boilerplate language. Start directly with the explanation.
+      Explain this code snippet from "${fileName}" in 2 simple, non-technical sentences.
+      Focus only on the purpose of the code.
 
       CODE:
       ${code}
@@ -27,7 +30,7 @@ exports.explainCode = async (code, fileName) => {
     const response = await result.response;
     return response.text().trim();
   } catch (err) {
-    console.error('[AI Service Error]:', err.message);
-    return "Neural analysis currently unavailable. The engine is recalibrating.";
+    console.error('[AI SERVICE ERROR]:', err.message);
+    return "AI analysis failed. Please check if GEMINI_API_KEY is set in your environment (Render/Vercel).";
   }
 };

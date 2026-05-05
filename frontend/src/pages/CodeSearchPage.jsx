@@ -103,7 +103,7 @@ const ResultCard = ({ result, idx, copiedId, handleCopy, query }) => {
             className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${explanation ? 'bg-accent-blue/10 text-accent-blue border-accent-blue/30' : 'bg-white/5 text-white/40 hover:bg-white/10 border-white/5'}`}
           >
             {isExplaining ? <Loader size={16} className="animate-spin" /> : <Sparkles size={16} />}
-            <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">{explanation ? 'Neural Insight Active' : 'Neural Explain'}</span>
+            <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">{explanation ? 'AI Summary Active' : 'AI Summary'}</span>
           </button>
 
           <div className="h-8 w-[1px] bg-white/5 hidden sm:block" />
@@ -135,7 +135,7 @@ const ResultCard = ({ result, idx, copiedId, handleCopy, query }) => {
                   <Sparkles size={14} className="animate-pulse" />
                 </div>
                 <div className="space-y-1">
-                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-accent-blue/50">Neural Synthesis</span>
+                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-accent-blue/50">AI Code Summary</span>
                    <p className="text-sm text-gray-300 leading-relaxed font-medium">
                      {explanation}
                    </p>
