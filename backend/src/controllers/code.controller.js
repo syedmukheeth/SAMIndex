@@ -145,14 +145,20 @@ exports.searchCode = catchAsync(async (req, res, next) => {
   const searchQuery = {
     $or: [
       { content: { $regex: q, $options: 'i' } },
-      { path: { $regex: q, $options: 'i' } },
-      { repo: { $regex: q, $options: 'i' } },
-      { owner: { $regex: q, $options: 'i' } }
+      { path: { $regex: q, $options: 'i' } }
     ]
   };
 
+  // If searching in a specific repo (Workspace Mode)
   if (repo) {
-    searchQuery.repo = repo;
+    // Exact match for the repo name (case-insensitive)
+    searchQuery.repo = { $regex: `^${repo}$`, $options: 'i' };
+  } else {
+    // Global search: Also search in repo/owner names
+    searchQuery.$or.push(
+      { repo: { $regex: q, $options: 'i' } },
+      { owner: { $regex: q, $options: 'i' } }
+    );
   }
 
   // 2. Run Search and Count in Parallel
