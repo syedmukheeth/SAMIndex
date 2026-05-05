@@ -583,8 +583,6 @@ const CodeSearchPage = () => {
     }
   };
 
-  };
-
   return (
     <div className="min-h-screen bg-black text-white selection:bg-accent-blue/30 relative overflow-hidden">
       {/* Background Layer */}
