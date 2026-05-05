@@ -7,6 +7,7 @@ const CodeFile = require('../models/codeFile.model');
 const SearchHistory = require('../models/SearchHistory');
 const { isRedisConnected } = require('../config/redis');
 const indexingService = require('../services/indexing.service');
+const Repository = require('../models/repository.model');
 
 /**
  * @desc    Add repository indexing task to queue
@@ -45,6 +46,32 @@ exports.indexRepository = catchAsync(async (req, res, next) => {
       message: `Neural Link Established for ${owner}/${repo}`,
       data: { cached: true, isIndexed: true }
     });
+  }
+
+  // NEW: Ensure Repository record exists with metadata before indexing
+  if (!existingRepo) {
+    try {
+      const meta = await githubService.getRepoDetails(owner, repo);
+      await Repository.create({
+        name: repo.toLowerCase(),
+        owner: owner.toLowerCase(),
+        stars: meta.stargazers_count,
+        forks: meta.forks_count,
+        lang: meta.language,
+        url: meta.html_url,
+        description: meta.description,
+        githubId: meta.id,
+        isIndexed: false
+      });
+    } catch (e) {
+      console.warn('Metadata fetch failed, creating stub:', e.message);
+      await Repository.create({
+        name: repo.toLowerCase(),
+        owner: owner.toLowerCase(),
+        url: `https://github.com/${owner}/${repo}`,
+        isIndexed: false
+      });
+    }
   }
 
   // 3. Proactive Rate Limit Check

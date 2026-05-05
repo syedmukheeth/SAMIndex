@@ -25,31 +25,30 @@ exports.searchAll = catchAsync(async (req, res, next) => {
 
   const skip = (page - 1) * limit;
 
-  if (!q) {
-    return res.status(200).json({
-      status: 'success',
-      data: { users: [], repositories: [] },
-    });
+  // 2. Build MongoDB Query
+  let searchQuery = {};
+  if (q) {
+    searchQuery = { $text: { $search: q } };
   }
-
-  // 2. Optimized Mongo Queries
-  const searchQuery = { $text: { $search: q } };
-  const textScoreProjection = { searchScore: { $meta: 'textScore' } };
+  
+  const textScoreProjection = q ? { searchScore: { $meta: 'textScore' } } : {};
   
   // Fields to exclude to reduce response size
   const excludeFields = '-__v -updatedAt -createdAt';
 
   // 3. Perform parallel searches with .lean() for speed
   const [users, repositories] = await Promise.all([
-    User.find(searchQuery, textScoreProjection)
-      .select(excludeFields)
-      .sort(sort === 'score' ? { score: -1 } : textScoreProjection)
-      .skip(skip)
-      .limit(Number(limit))
-      .lean(),
+    q 
+      ? User.find(searchQuery, textScoreProjection)
+          .select(excludeFields)
+          .sort(sort === 'score' ? { score: -1 } : textScoreProjection)
+          .skip(skip)
+          .limit(Number(limit))
+          .lean()
+      : Promise.resolve([]),
     Repository.find(searchQuery, textScoreProjection)
       .select(excludeFields)
-      .sort(sort === 'score' ? { stars: -1 } : textScoreProjection)
+      .sort(q ? (sort === 'score' ? { stars: -1 } : textScoreProjection) : { lastIndexedAt: -1 })
       .skip(skip)
       .limit(Number(limit))
       .lean(),

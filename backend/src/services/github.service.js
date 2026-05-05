@@ -77,6 +77,15 @@ class GitHubService {
     }
   }
 
+  async getRepoDetails(owner, repo) {
+    try {
+      const response = await this.client.get(`/repos/${owner}/${repo}`);
+      return response.data;
+    } catch (error) {
+      this._handleGitHubError(error, `Repository ${owner}/${repo} not found on GitHub.`);
+    }
+  }
+
   async fetchUserRepos(username) {
     try {
       const response = await this.client.get(`/users/${username}/repos?per_page=100&sort=updated`);
