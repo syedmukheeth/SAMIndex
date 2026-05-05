@@ -21,8 +21,8 @@ const processIndexing = async (data, job = null) => {
     console.log(`[IndexingService] Discovered ${filePaths.length} potential files for ${owner}/${repo}`);
 
     if (filePaths.length === 0) {
-      console.warn(`[IndexingService] No files found to index for ${owner}/${repo}`);
-      return { filesFound: 0, filesIndexed: 0 };
+      console.error(`[IndexingService] CRITICAL: No indexable files found for ${owner}/${repo}. Check permissions or repo contents.`);
+      throw new Error(`Repository "${repo}" appears empty or inaccessible. Verify your GitHub Token permissions.`);
     }
 
     const CONCURRENCY_LIMIT = 3; // Reduced for stability

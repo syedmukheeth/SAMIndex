@@ -159,14 +159,9 @@ exports.searchCode = catchAsync(async (req, res, next) => {
 
   // If searching in a specific repo (Workspace Mode)
   if (repo) {
-    // Exact match for the repo name (case-insensitive)
-    searchQuery.repo = { $regex: `^${repo}$`, $options: 'i' };
-  } else {
-    // Global search: Also search in repo/owner names
-    searchQuery.$or.push(
-      { repo: { $regex: q, $options: 'i' } },
-      { owner: { $regex: q, $options: 'i' } }
-    );
+    // FORCE strict equality for the repo name to prevent leakage
+    searchQuery.repo = repo;
+    if (req.query.owner) searchQuery.owner = req.query.owner;
   }
 
   // 2. Run Search and Count in Parallel

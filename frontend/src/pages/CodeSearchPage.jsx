@@ -259,7 +259,16 @@ const CodeSearchPage = () => {
     setLoading(true);
     try {
       const response = await searchCode(searchQuery, activeRepo?.repo);
-      setResults(response.data);
+      
+      // Senior Dev Safety Filter: Ensure backend results match our active workspace
+      let filteredResults = response.data;
+      if (activeRepo) {
+        filteredResults = response.data.filter(file => 
+          file.repo.toLowerCase() === activeRepo.repo.toLowerCase()
+        );
+      }
+      
+      setResults(filteredResults);
     } catch (error) {
       console.error('Code search failed:', error);
     } finally {
