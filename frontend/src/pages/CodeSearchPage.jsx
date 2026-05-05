@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { searchCode, indexRepo, getIndexStatus, getIndexedRepos, getRepoDetails, aiExplain } from '../services/api';
 import { useDebounce } from '../hooks/useDebounce';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import Skeleton from '../components/ui/Skeleton';
 import HistoryPanel from '../components/search/HistoryPanel';
 
@@ -865,9 +865,13 @@ const CodeSearchPage = () => {
                     <Cpu size={14} className="text-accent-blue" />
                     Recently Indexed Workspaces
                   </h3>
-                  {indexedRepos.length > 0 && (
-                    <span className="text-[10px] font-bold text-accent-blue/60">{indexedRepos.length} Repos Online</span>
-                  )}
+                  <Link 
+                    to="/workspaces" 
+                    className="text-[10px] font-black uppercase tracking-widest text-accent-blue hover:text-white transition-colors flex items-center gap-2 group"
+                  >
+                    View Neural Brain
+                    <ArrowLeft size={12} className="rotate-180 group-hover:translate-x-1 transition-transform" />
+                  </Link>
                 </div>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
