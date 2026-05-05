@@ -1,5 +1,6 @@
 const githubService = require('./github.service');
 const CodeFile = require('../models/codeFile.model');
+const cache = require('../utils/cache');
 
 /**
  * @desc Core indexing logic that can be run via BullMQ Worker OR directly (fallback)
@@ -14,7 +15,11 @@ const processIndexing = async (data, job = null) => {
   
   try {
     // 1. Update Progress
-    if (job) await job.updateProgress(10);
+    if (job) {
+      await job.updateProgress(10);
+    } else if (jobId) {
+      cache.set(`job:${jobId}`, { state: 'active', progress: 10, result: { filesIndexed: 0 } }, 3600);
+    }
 
     // 2. Fetch file list
     const filePaths = preFetchedFiles || await githubService.getRepoFiles(owner, repo);
@@ -82,6 +87,9 @@ const processIndexing = async (data, job = null) => {
           if (job) {
             const progress = Math.min(10 + Math.floor((i / filePaths.length) * 85), 95);
             await job.updateProgress(progress);
+          } else if (jobId) {
+            const progress = Math.min(10 + Math.floor((i / filePaths.length) * 85), 95);
+            cache.set(`job:${jobId}`, { state: 'active', progress, result: { filesIndexed: indexedCount } }, 3600);
           }
         } catch (bErr) {
           console.error('[IndexingService] bulkWrite partially failed:', bErr.message);
@@ -111,6 +119,18 @@ const processIndexing = async (data, job = null) => {
     }
 
     if (job) await job.updateProgress(100);
+    if (jobId && !job) {
+      cache.set(`job:${jobId}`, { 
+        state: 'completed', 
+        progress: 100, 
+        result: { 
+          filesFound: filePaths.length,
+          filesIndexed: indexedCount,
+          filesFailed: failCount 
+        } 
+      }, 3600);
+    }
+    
     console.log(`[IndexingService] COMPLETED: ${indexedCount} indexed, ${failCount} failed.`);
     
     return {
@@ -121,6 +141,13 @@ const processIndexing = async (data, job = null) => {
     };
   } catch (error) {
     console.error(`[IndexingService] Critical failure:`, error.message);
+    if (jobId && !job) {
+      cache.set(`job:${jobId}`, { 
+        state: 'failed', 
+        progress: 0, 
+        failedReason: error.message 
+      }, 3600);
+    }
     throw error;
   }
 };

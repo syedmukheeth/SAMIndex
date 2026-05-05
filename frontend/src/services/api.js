@@ -29,9 +29,10 @@ export const getUserDetails = async (username) => {
   return data;
 };
 
-export const searchCode = async (query, page = 1, repo = '') => {
+export const searchCode = async (query, repo = '', owner = '', page = 1) => {
   let url = `/code-search?q=${query}&page=${page}`;
   if (repo) url += `&repo=${repo}`;
+  if (owner) url += `&owner=${owner}`;
   const { data } = await api.get(url);
   return data;
 };

@@ -43,6 +43,10 @@ exports.indexRepository = catchAsync(async (req, res, next) => {
   // 2. PRE-FLIGHT: Check repository size/file count to prevent abuse
   const filePaths = await githubService.getRepoFiles(owner, repo);
   
+  if (filePaths.length === 0) {
+    return next(new AppError('No indexable code files found in this repository. Supported types: .js, .ts, .jsx, .tsx, .py, .java, .cpp, .go, etc.', 400));
+  }
+
   if (filePaths.length > 5000) {
     return next(new AppError(`Repository too large (${filePaths.length} files). Max limit is 5000 files for indexing.`, 400));
   }
@@ -96,10 +100,23 @@ exports.indexRepository = catchAsync(async (req, res, next) => {
 exports.getIndexStatus = catchAsync(async (req, res, next) => {
   const { jobId } = req.params;
 
-  // Handle Local Fallback Jobs or Quick Status
+  const cachedStatus = cache.get(`job:${jobId}`);
+  if (cachedStatus) {
+    return res.status(200).json({
+      status: 'success',
+      data: {
+        id: jobId,
+        ...cachedStatus,
+        isFallback: jobId.startsWith('local:')
+      }
+    });
+  }
+
+  // Handle Local Fallback Jobs or Quick Status (Backwards Compatibility / Fallback)
   if (jobId.startsWith('local:') || !isRedisConnected()) {
-    const owner = jobId.split(':')[1];
-    const repo = jobId.split(':')[2];
+    const parts = jobId.split(':');
+    const owner = parts[1];
+    const repo = parts[2];
     
     const count = await CodeFile.countDocuments({ owner, repo });
     
@@ -108,7 +125,7 @@ exports.getIndexStatus = catchAsync(async (req, res, next) => {
       data: {
         id: jobId,
         state: count > 0 ? 'active' : 'waiting',
-        progress: Math.min(Math.floor((count / 50) * 100), 99), // Approximate until we know total
+        progress: Math.min(Math.floor((count / 50) * 100), 99), 
         result: { filesIndexed: count },
         isFallback: true
       }
@@ -159,24 +176,20 @@ exports.searchCode = catchAsync(async (req, res, next) => {
   const limitNum = parseInt(limit, 10);
   const skip = (pageNum - 1) * limitNum;
 
-  // 1. Build Query (Regex for partial matches across all fields)
-  const searchQuery = {
-    $or: [
-      { content: { $regex: q, $options: 'i' } },
-      { path: { $regex: q, $options: 'i' } }
-    ]
-  };
+  // 1. Build Query - Use Text Search for efficiency and relevance
+  const searchQuery = { $text: { $search: q } };
+  const projection = { score: { $meta: 'textScore' } };
 
   // If searching in a specific repo (Workspace Mode)
   if (repo) {
-    // FORCE strict equality for the repo name to prevent leakage
     searchQuery.repo = repo;
     if (req.query.owner) searchQuery.owner = req.query.owner;
   }
 
   // 2. Run Search and Count in Parallel
   const [results, totalResults] = await Promise.all([
-    CodeFile.find(searchQuery)
+    CodeFile.find(searchQuery, projection)
+      .sort({ score: { $meta: 'textScore' } })
       .skip(skip)
       .limit(limitNum)
       .select('repo path owner content')
@@ -222,15 +235,11 @@ exports.searchCode = catchAsync(async (req, res, next) => {
       });
     }
 
-    // Simple relevance: Prioritize path/repo matches over content
-    const relevance = file.path.toLowerCase().includes(q.toLowerCase()) || 
-                     file.repo.toLowerCase().includes(q.toLowerCase()) ? 10 : 1;
-
     return {
       repo: file.repo,
       owner: file.owner,
       path: file.path,
-      relevance,
+      relevance: file.score || 1, // Use MongoDB text score
       snippets // Array of top 3 snippets
     };
   });

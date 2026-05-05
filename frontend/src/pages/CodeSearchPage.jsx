@@ -258,7 +258,7 @@ const CodeSearchPage = () => {
     if (!searchQuery) return;
     setLoading(true);
     try {
-      const response = await searchCode(searchQuery, activeRepo?.repo);
+      const response = await searchCode(searchQuery, activeRepo?.repo, activeRepo?.owner);
       
       // Senior Dev Safety Filter: Ensure backend results match our active workspace
       let filteredResults = response.data;
@@ -285,7 +285,7 @@ const CodeSearchPage = () => {
 
       setLoading(true);
       try {
-        const response = await searchCode(debouncedQuery, activeRepo?.repo);
+        const response = await searchCode(debouncedQuery, activeRepo?.repo, activeRepo?.owner);
         setResults(response.data);
 
         // Save to local history
@@ -449,7 +449,7 @@ const CodeSearchPage = () => {
       const owner = parts[0];
       const repo = parts[1];
 
-      const response = await indexRepo(`${owner}/${repo}`);
+      const response = await indexRepo(owner, repo);
       const { jobId, cached } = response.data;
 
       if (cached) {

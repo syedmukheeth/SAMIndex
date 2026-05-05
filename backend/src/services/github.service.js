@@ -142,7 +142,14 @@ class GitHubService {
       // 2. Fetch all tree items (with fallback for truncation)
       const allItems = await this._fetchTreeRecursive(owner, repo, defaultBranch);
 
-      const allowedExtensions = ['.js', '.ts', '.cpp', '.c', '.py', '.java', '.json'];
+      const allowedExtensions = [
+        '.js', '.ts', '.jsx', '.tsx', 
+        '.cpp', '.c', '.h', '.hpp', '.cc',
+        '.py', '.java', '.json', '.go', 
+        '.rb', '.php', '.cs', '.sh', 
+        '.yml', '.yaml', '.md', '.sql', 
+        '.rs', '.swift', '.kt', '.kts'
+      ];
 
       // 3. Filter only code files and include metadata
       const files = allItems
