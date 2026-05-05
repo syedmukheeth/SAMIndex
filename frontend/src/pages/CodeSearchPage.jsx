@@ -156,22 +156,28 @@ const IndexingModal = ({ status, progress, repo, isOpen, onComplete }) => {
             <div className="space-y-6">
               <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
                 <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
-                  className="h-full bg-gradient-to-r from-accent-blue via-accent-purple to-accent-blue bg-[length:200%_auto] animate-[gradient_2s_linear_infinity]"
+                   initial={{ width: 0 }}
+                   animate={{ width: `${progress}%` }}
+                   className="h-full bg-gradient-to-r from-accent-blue via-accent-purple to-accent-blue bg-[length:200%_auto] animate-[gradient_2s_linear_infinity]"
                 />
               </div>
               
               <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-white/30">
-                <span>Synchronizing Neural Nodes</span>
+                <span>{progress >= 100 ? 'Neural Link Established' : 'Synchronizing Neural Nodes'}</span>
                 <span className="text-accent-blue">{progress}% Complete</span>
+              </div>
+
+              {/* Real-time File Counter */}
+              <div className="flex items-center justify-center gap-2 text-xs font-mono text-white/40">
+                 <Database size={14} className="text-accent-blue" />
+                 <span>{status?.includes('Successfully Indexed') ? status : `${Math.floor((progress / 100) * 50)} files indexed...`}</span>
               </div>
 
               <motion.div 
                 key={status}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="py-4 px-6 rounded-2xl bg-white/5 border border-white/5 text-xs font-medium text-white/60 italic"
+                className={`py-4 px-6 rounded-2xl bg-white/5 border ${status?.toLowerCase().includes('fail') || status?.toLowerCase().includes('error') ? 'border-red-500/20 text-red-400' : 'border-white/5 text-white/60'} text-xs font-medium italic`}
               >
                 "{status || 'Initializing deep scan sequence...'}"
               </motion.div>
@@ -368,13 +374,13 @@ const CodeSearchPage = () => {
           setIndexStatus({ type: 'error', message: failedReason || 'Indexing failed' });
           setIsIndexing(false);
         } else {
-          // Dynamic status messages based on progress
-          let msg = 'Indexing...';
-          if (progress < 20) msg = 'Initializing deep scan sequence...';
-          else if (progress < 40) msg = 'Cloning neural file tree...';
-          else if (progress < 60) msg = 'Analyzing code semantics...';
-          else if (progress < 80) msg = 'Optimizing search vectors...';
-          else msg = 'Finalizing neural link...';
+          const count = result?.filesIndexed || 0;
+          let msg = `Indexing... (${count} files indexed)`;
+          if (progress < 20) msg = `Initializing deep scan sequence... (${count} files)`;
+          else if (progress < 40) msg = `Cloning neural file tree... (${count} files)`;
+          else if (progress < 60) msg = `Analyzing code semantics... (${count} files)`;
+          else if (progress < 80) msg = `Optimizing search vectors... (${count} files)`;
+          else msg = `Finalizing neural link... (${count} files)`;
           
           setIndexStatus({ type: 'info', message: msg });
         }
