@@ -419,49 +419,41 @@ const CodeSearchPage = () => {
   };
 
   const handleIndexRepo = async () => {
-    let cleanPath = repoUrl.trim().toLowerCase();
-    cleanPath = cleanPath.replace(/^https?:\/\//, '').replace(/^github.com\//, '').replace(/\/$/, '');
-    const parts = cleanPath.split('/').filter(Boolean);
-    
-    if (parts.length < 2) {
-      setIndexStatus({ type: 'error', message: 'Provide owner/repo (e.g. facebook/react)' });
-      return;
-    }
-
-    const [owner, repo] = parts;
+    if (!repoUrl.trim()) return;
     setIsIndexing(true);
     setIndexProgress(0);
-    setIndexStatus({ type: 'info', message: 'Connecting to neural index...' });
+    setIndexStatus({ type: 'info', message: 'Initializing Neural Engine...' });
 
     try {
-      const response = await indexRepo(owner, repo);
-      if (response.status === 'success') {
-        const { jobId, cached } = response.data;
-        
-        if (cached) {
-          setIndexProgress(100);
-          setIndexStatus({ type: 'success', message: `Repository is already indexed` });
-          setActiveRepo({ owner, repo });
-          setIsIndexing(false);
-          setRepoUrl('');
-          setShowSuccess(true);
-          return;
-        }
+      // Robust URL Parsing
+      let path = repoUrl.trim().replace(/https?:\/\/github\.com\//i, '').replace(/\/$/, '');
+      const parts = path.split('/').filter(Boolean);
+      
+      if (parts.length < 2) {
+        throw new Error('Invalid URL. Use format: owner/repo');
+      }
 
-        if (jobId) {
-          setIndexStatus({ type: 'info', message: 'Job queued. Starting neural scan...' });
-          pollIndexStatus(jobId, owner, repo);
-        } else {
-          setIndexStatus({ type: 'success', message: 'Indexing started' });
-          setIsIndexing(false);
-        }
+      const owner = parts[0];
+      const repo = parts[1];
+
+      const response = await indexRepo(`${owner}/${repo}`);
+      const { jobId, cached } = response.data;
+
+      if (cached) {
+        setIndexStatus({ type: 'success', message: 'Neural Link Cached!' });
+        setActiveRepo({ owner, repo });
+        setIsIndexing(false);
+        setRepoUrl('');
+        if (query) handleSearch(query);
+      } else {
+        pollIndexStatus(jobId, owner, repo);
       }
     } catch (error) {
       setIndexStatus({ 
         type: 'error', 
-        message: error.response?.data?.message || 'Neural link failed. Check repository availability.' 
+        message: error.response?.data?.message || error.message || 'Indexing Failed' 
       });
-      setIsIndexing(false);
+      setTimeout(() => setIsIndexing(false), 3000);
     }
   };
 
