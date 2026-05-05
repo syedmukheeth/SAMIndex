@@ -173,6 +173,12 @@ const IndexingModal = ({ status, progress, repo, isOpen, onComplete }) => {
                  <span>{status?.includes('Successfully Indexed') ? status : `${Math.floor((progress / 100) * 50)} files indexed...`}</span>
               </div>
 
+              {/* Status Indicator */}
+              <div className="flex items-center justify-center gap-2 text-xs font-mono text-white/40">
+                  <Database size={14} className="text-accent-blue" />
+                  <span>{status?.includes('Successfully Indexed') ? status : `${Math.floor((progress / 100) * 50)} files indexed...`}</span>
+              </div>
+
               <motion.div 
                 key={status}
                 initial={{ opacity: 0, x: -10 }}
@@ -592,24 +598,72 @@ const CodeSearchPage = () => {
             status={indexStatus?.message}
             progress={indexProgress}
             repo={repoUrl}
+            activeRepo={activeRepo}
+            previewRepo={previewRepo}
+            setActiveRepo={setActiveRepo}
+            setSearchParams={setSearchParams}
+            setRepoUrl={setRepoUrl}
+            indexing={isIndexing}
+            handleIndexRepo={handleIndexRepo}
           />
         )}
       </AnimatePresence>
 
       <div className="relative z-10 pt-32 pb-20 px-6">
         <header className="text-center mb-20">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="inline-block px-5 py-2 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-xl"
-          >
-            <div className="flex items-center gap-3">
-              <Sparkles size={14} className="text-accent-blue animate-pulse" />
-              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/60">
-                {activeRepo ? `Workspace: ${activeRepo.repo}` : 'Neural Engine v2.0'}
+          {/* Status Badge */}
+          <div className="flex flex-col items-center gap-4 mb-12">
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md shadow-xl"
+            >
+              <div className="w-1.5 h-1.5 rounded-full bg-accent-blue animate-pulse" />
+              <span className="text-[10px] font-bold tracking-[0.2em] text-gray-400 uppercase">
+                Neural Engine V2.0
               </span>
-            </div>
-          </motion.div>
+            </motion.div>
+
+            <AnimatePresence mode="wait">
+              {(activeRepo || previewRepo) ? (
+                <motion.div
+                  key="active-workspace"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="flex items-center gap-3 px-6 py-2 rounded-2xl bg-accent-blue/10 border border-accent-blue/20 backdrop-blur-xl shadow-2xl shadow-accent-blue/5"
+                >
+                  <Globe size={14} className="text-accent-blue" />
+                  <div className="flex flex-col">
+                    <span className="text-[8px] font-black tracking-widest text-accent-blue/50 uppercase leading-none">Active Workspace</span>
+                    <span className="text-sm font-bold text-white">{(activeRepo || previewRepo).owner} / {(activeRepo || previewRepo).repo}</span>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setActiveRepo(null);
+                      setSearchParams({});
+                      setRepoUrl('');
+                    }}
+                    className="ml-2 p-1.5 hover:bg-accent-blue/20 rounded-lg text-accent-blue/50 hover:text-accent-blue transition-all"
+                    title="Exit Workspace"
+                  >
+                    <X size={14} />
+                  </button>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="global-mode"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-white/2 border border-white/5"
+                >
+                  <Globe size={12} className="text-gray-600" />
+                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Global Neural Scan</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
           
           <motion.h1 
             key={activeRepo ? 'workspace' : 'home'}
@@ -726,6 +780,14 @@ const CodeSearchPage = () => {
                       onChange={(e) => setRepoUrl(e.target.value)}
                       onKeyDown={handleIndexKeyDown}
                     />
+                    {repoUrl && (
+                      <button 
+                        onClick={() => setRepoUrl('')}
+                        className="p-1.5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors mr-2"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
                     <button 
                       onClick={handleIndexRepo}
                       className="bg-white hover:bg-accent-blue text-black hover:text-white text-[10px] font-black py-2.5 px-6 rounded-2xl transition-all uppercase tracking-widest shadow-lg active:scale-95"
