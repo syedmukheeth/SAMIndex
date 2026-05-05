@@ -4,6 +4,11 @@ const Repository = require('../models/repository.model');
 const AppError = require('../utils/appError');
 const ranking = require('../utils/ranking');
 const cache = require('../utils/cache');
+const fs = require('fs');
+const path = require('path');
+const { promisify } = require('util');
+const stream = require('stream');
+const pipeline = promisify(stream.pipeline);
 
 class GitHubService {
   constructor() {
@@ -265,6 +270,23 @@ class GitHubService {
     } catch (error) {
       console.error(`[GitHub API] Failed to fetch blob ${sha}:`, error.message);
       return null;
+    }
+  }
+
+  /**
+   * Download the entire repository as a ZIP (for high-speed indexing)
+   */
+  async downloadRepoZip(owner, repo, destPath) {
+    try {
+      const response = await this.client.get(`/repos/${owner}/${repo}/zipball`, {
+        responseType: 'stream'
+      });
+      
+      await pipeline(response.data, fs.createWriteStream(destPath));
+      return true;
+    } catch (error) {
+      console.error(`[GitHub API] ZIP Download failed for ${owner}/${repo}:`, error.message);
+      return false;
     }
   }
 

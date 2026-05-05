@@ -2,6 +2,12 @@ const githubService = require('./github.service');
 const CodeFile = require('../models/codeFile.model');
 const Repository = require('../models/repository.model');
 const cache = require('../utils/cache');
+const fs = require('fs');
+const path = require('path');
+const { exec } = require('child_process');
+const { promisify } = require('util');
+const execAsync = promisify(exec);
+const fsPromises = fs.promises;
 
 /**
  * @desc Core indexing logic that can be run via BullMQ Worker OR directly (fallback)
@@ -21,10 +27,116 @@ const processIndexing = async (data, job = null) => {
     if (job) {
       await job.updateProgress(10);
     } else if (jobId) {
-      cache.set(`job:${jobId}`, { state: 'active', progress: 10, result: { filesIndexed: 0 } }, 3600);
+      cache.set(`job:${jobId}`, { state: 'active', progress: 5, result: { filesIndexed: 0 } }, 3600);
     }
 
-    // 2. Fetch file list (Internal discovery if not provided)
+    // NEW: TURBO INDEXING STRATEGY (ZIP Based)
+    // This allows 10k+ files to be indexed in minutes instead of hours
+    const tempDir = path.join(process.cwd(), 'temp_indexing', `${owner}_${repo}_${id}`);
+    const zipPath = `${tempDir}.zip`;
+    
+    try {
+      if (!fs.existsSync(path.dirname(tempDir))) {
+        fs.mkdirSync(path.dirname(tempDir), { recursive: true });
+      }
+
+      console.log(`[TurboIndexer] Downloading ZIP for ${owner}/${repo}...`);
+      if (job) await job.updateProgress(15);
+      
+      const downloadSuccess = await githubService.downloadRepoZip(owner, repo, zipPath);
+      
+      if (downloadSuccess) {
+        console.log(`[TurboIndexer] Extracting ZIP...`);
+        if (job) await job.updateProgress(25);
+        
+        fs.mkdirSync(tempDir, { recursive: true });
+        // Use tar.exe which we verified is available
+        await execAsync(`tar -xf "${zipPath}" -C "${tempDir}" --strip-components=1`);
+        
+        console.log(`[TurboIndexer] Scanning extracted files...`);
+        const files = [];
+        const getAllFiles = async (dirPath) => {
+          const entries = await fsPromises.readdir(dirPath, { withFileTypes: true });
+          for (const entry of entries) {
+            const fullPath = path.join(dirPath, entry.name);
+            if (entry.isDirectory()) {
+              await getAllFiles(fullPath);
+            } else {
+              const relPath = path.relative(tempDir, fullPath).replace(/\\/g, '/');
+              const ext = `.${relPath.split('.').pop()}`;
+              const allowedExtensions = ['.js', '.ts', '.jsx', '.tsx', '.py', '.java', '.cpp', '.go', '.rs', '.swift', '.kt'];
+              if (allowedExtensions.includes(ext)) {
+                const stats = await fsPromises.stat(fullPath);
+                if (stats.size < 1024000) { // 1MB limit
+                  files.push({ fullPath, relPath, size: stats.size });
+                }
+              }
+            }
+          }
+        };
+
+        await getAllFiles(tempDir);
+        console.log(`[TurboIndexer] Discovered ${files.length} code files via ZIP.`);
+
+        if (files.length > 0) {
+          let indexedCount = 0;
+          const bulkOps = [];
+          
+          for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const content = await fsPromises.readFile(file.fullPath, 'utf-8');
+            
+            bulkOps.push({
+              updateOne: {
+                filter: { owner, repo, path: file.relPath },
+                update: {
+                  owner,
+                  repo,
+                  path: file.relPath,
+                  content,
+                  lang: file.relPath.split('.').pop(),
+                  lastIndexedSession: id,
+                  updatedAt: new Date()
+                },
+                upsert: true
+              }
+            });
+
+            if (bulkOps.length >= 100) {
+              await CodeFile.bulkWrite(bulkOps, { ordered: false });
+              indexedCount += bulkOps.length;
+              bulkOps.length = 0;
+              
+              const progress = Math.min(25 + Math.floor((i / files.length) * 70), 95);
+              if (job) await job.updateProgress(progress);
+              else if (jobId) cache.set(`job:${jobId}`, { state: 'active', progress, result: { filesIndexed: indexedCount } }, 3600);
+            }
+          }
+
+          if (bulkOps.length > 0) {
+            await CodeFile.bulkWrite(bulkOps, { ordered: false });
+            indexedCount += bulkOps.length;
+          }
+
+          // Cleanup
+          try {
+            await fsPromises.rm(tempDir, { recursive: true, force: true });
+            await fsPromises.unlink(zipPath);
+          } catch (e) { console.warn('Cleanup failed:', e.message); }
+
+          return await finalizeIndexing(owner, repo, id, files.length, indexedCount, 0, job, jobId);
+        }
+      }
+    } catch (turboErr) {
+      console.error(`[TurboIndexer] Failed: ${turboErr.message}. Falling back to API indexing.`);
+      // Cleanup on failure
+      try {
+        if (fs.existsSync(tempDir)) await fsPromises.rm(tempDir, { recursive: true, force: true });
+        if (fs.existsSync(zipPath)) await fsPromises.unlink(zipPath);
+      } catch (e) {}
+    }
+
+    // FALLBACK TO API INDEXING (if ZIP fails)
     const filePaths = preFetchedFiles || await githubService.getRepoFiles(owner, repo);
     console.log(`[IndexingService] Discovered ${filePaths.length} potential files for ${owner}/${repo}`);
 
@@ -124,48 +236,7 @@ const processIndexing = async (data, job = null) => {
       }
     }
 
-    // 4. Prune Ghost Files (Only if we had high success rate)
-    if (indexedCount > (filePaths.length * 0.5)) {
-      console.log(`[IndexingService] Pruning old files for ${owner}/${repo}`);
-      const pruneResult = await CodeFile.deleteMany({
-        owner,
-        repo,
-        lastIndexedSession: { $ne: id }
-      });
-      console.log(`[IndexingService] Pruned ${pruneResult.deletedCount} files.`);
-    }
-
-    if (job) await job.updateProgress(100);
-    if (jobId && !job) {
-      cache.set(`job:${jobId}`, { 
-        state: 'completed', 
-        progress: 100, 
-        result: { 
-          filesFound: filePaths.length,
-          filesIndexed: indexedCount,
-          filesFailed: failCount 
-        } 
-      }, 3600);
-    }
-    
-    // 5. Update Repository Metadata
-    try {
-      await Repository.findOneAndUpdate(
-        { owner, name: repo },
-        { isIndexed: true, lastIndexedAt: new Date() }
-      );
-    } catch (repoErr) {
-      console.warn(`[IndexingService] Failed to update repo metadata: ${repoErr.message}`);
-    }
-
-    console.log(`[IndexingService] COMPLETED: ${indexedCount} indexed, ${failCount} failed.`);
-    
-    return {
-      filesFound: filePaths.length,
-      filesIndexed: indexedCount,
-      filesFailed: failCount,
-      sessionId: id
-    };
+    return await finalizeIndexing(owner, repo, id, filePaths.length, indexedCount, failCount, job, jobId);
   } catch (error) {
     console.error(`[IndexingService] Critical failure:`, error.message);
     if (jobId && !job) {
@@ -177,6 +248,46 @@ const processIndexing = async (data, job = null) => {
     }
     throw error;
   }
+};
+
+const finalizeIndexing = async (owner, repo, id, found, indexed, failed, job, jobId) => {
+  // Prune Ghost Files (Only if we had high success rate)
+  if (indexed > (found * 0.5)) {
+    console.log(`[IndexingService] Pruning old files for ${owner}/${repo}`);
+    await CodeFile.deleteMany({
+      owner,
+      repo,
+      lastIndexedSession: { $ne: id }
+    });
+  }
+
+  if (job) await job.updateProgress(100);
+  if (jobId && !job) {
+    cache.set(`job:${jobId}`, { 
+      state: 'completed', 
+      progress: 100, 
+      result: { 
+        filesFound: found,
+        filesIndexed: indexed,
+        filesFailed: failed 
+      } 
+    }, 3600);
+  }
+  
+  // Update Repository Metadata
+  await Repository.findOneAndUpdate(
+    { owner, name: repo },
+    { isIndexed: true, lastIndexedAt: new Date() }
+  );
+
+  console.log(`[IndexingService] COMPLETED: ${indexed} indexed, ${failed} failed.`);
+  
+  return {
+    filesFound: found,
+    filesIndexed: indexed,
+    filesFailed: failed,
+    sessionId: id
+  };
 };
 
 module.exports = {

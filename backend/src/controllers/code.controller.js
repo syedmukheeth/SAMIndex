@@ -257,16 +257,40 @@ exports.searchCode = catchAsync(async (req, res, next) => {
     ).catch(err => console.error('Error saving search history:', err));
   }
 
+  // 3. Fallback: If no results found in DB but searching a specific repo
+  let finalResults = formattedResults;
+  let finalTotal = totalResults;
+  if (results.length === 0 && repo && req.query.owner) {
+    console.log(`[SearchFallback] No local results for ${req.query.owner}/${repo}. Proxying to GitHub...`);
+    try {
+      const githubResults = await githubService.client.get(`/search/code?q=${q}+repo:${req.query.owner}/${repo}`);
+      if (githubResults.data.items && githubResults.data.items.length > 0) {
+        finalResults = githubResults.data.items.slice(0, 10).map(item => ({
+          path: item.path,
+          repo: repo,
+          owner: req.query.owner,
+          content: '// Content streaming from GitHub live... \n// Indexing in progress for deep analysis.',
+          snippets: [{ line: 1, content: 'Indexing in progress...' }],
+          relevance: 0,
+          isLive: true
+        }));
+        finalTotal = githubResults.data.total_count;
+      }
+    } catch (err) {
+      console.warn('[SearchFallback] GitHub Search Proxy failed:', err.message);
+    }
+  }
+
   res.status(200).json({
     status: 'success',
     pagination: {
-      totalResults,
-      totalPages: Math.ceil(totalResults / limitNum),
+      totalResults: finalTotal,
+      totalPages: Math.ceil(finalTotal / limitNum),
       currentPage: pageNum,
       limit: limitNum
     },
-    count: formattedResults.length,
-    data: formattedResults
+    count: finalResults.length,
+    data: finalResults
   });
 });
 
