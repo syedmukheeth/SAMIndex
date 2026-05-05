@@ -176,9 +176,13 @@ exports.searchCode = catchAsync(async (req, res, next) => {
   const limitNum = parseInt(limit, 10);
   const skip = (pageNum - 1) * limitNum;
 
-  // 1. Build Query - Use Text Search for efficiency and relevance
-  const searchQuery = { $text: { $search: q } };
-  const projection = { score: { $meta: 'textScore' } };
+  // 1. Build Query - Use Regex for partial matches (essential for code like 'imp' -> 'import')
+  const searchQuery = {
+    $or: [
+      { content: { $regex: q, $options: 'i' } },
+      { path: { $regex: q, $options: 'i' } }
+    ]
+  };
 
   // If searching in a specific repo (Workspace Mode)
   if (repo) {
@@ -188,8 +192,7 @@ exports.searchCode = catchAsync(async (req, res, next) => {
 
   // 2. Run Search and Count in Parallel
   const [results, totalResults] = await Promise.all([
-    CodeFile.find(searchQuery, projection)
-      .sort({ score: { $meta: 'textScore' } })
+    CodeFile.find(searchQuery)
       .skip(skip)
       .limit(limitNum)
       .select('repo path owner content')
@@ -235,11 +238,14 @@ exports.searchCode = catchAsync(async (req, res, next) => {
       });
     }
 
+    // Simple relevance: Prioritize path matches over content
+    const relevance = file.path.toLowerCase().includes(q.toLowerCase()) ? 10 : 1;
+
     return {
       repo: file.repo,
       owner: file.owner,
       path: file.path,
-      relevance: file.score || 1, // Use MongoDB text score
+      relevance,
       snippets // Array of top 3 snippets
     };
   });
