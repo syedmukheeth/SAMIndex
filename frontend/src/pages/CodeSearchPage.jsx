@@ -419,11 +419,16 @@ const CodeSearchPage = () => {
   };
 
   const handleIndexRepo = async () => {
-    // SENIOR DEV CHECK: Must be logged in to write to the index
+    // SENIOR DEV AUTO-LOGIN: Don't let them get stuck
     if (!localStorage.getItem('token')) {
-      setIndexStatus({ type: 'error', message: 'LOGIN REQUIRED: Please sign in to index repositories.' });
-      setIsIndexing(true); // Show the modal so they see the error
-      setTimeout(() => setIsIndexing(false), 4000);
+      setIndexStatus({ type: 'error', message: 'REDIRECTING TO LOGIN... You must be signed in to index code.' });
+      setIsIndexing(true);
+      setTimeout(() => {
+        // Trigger the login flow (usually a modal or redirect)
+        const loginBtn = document.querySelector('button:contains("Log In")') || document.querySelector('a[href*="login"]');
+        if (loginBtn) loginBtn.click();
+        else window.location.href = '/login'; 
+      }, 2000);
       return;
     }
 
