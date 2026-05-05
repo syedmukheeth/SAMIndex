@@ -20,9 +20,6 @@ exports.explainCode = async (code, fileName) => {
     const cleanKey = apiKey.trim().replace(/[\n\r]/g, '');
     const genAI = new GoogleGenerativeAI(cleanKey);
     
-    // Using gemini-1.5-flash which is the current standard
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
     // SAFETY: Truncate very large files to avoid API limits
     const truncatedCode = code.length > 5000 ? code.substring(0, 5000) + "\n... [Truncated for AI Analysis]" : code;
 
@@ -34,15 +31,32 @@ exports.explainCode = async (code, fileName) => {
       ${truncatedCode}
     `;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-    
-    if (!text) {
-      throw new Error("Google AI returned an empty response.");
+    // SENIOR DEV FIX: Multi-model fallback strategy
+    const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"];
+    let lastError = null;
+
+    for (const modelName of modelsToTry) {
+      try {
+        console.log(`[AI NEURAL LINK]: Attempting connection with ${modelName}...`);
+        const model = genAI.getGenerativeModel({ model: modelName });
+        
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+        
+        if (text) {
+          console.log(`[AI SUCCESS]: Established stable link with ${modelName}`);
+          return text.trim();
+        }
+      } catch (err) {
+        console.error(`[AI FAILOVER]: ${modelName} rejected connection. Trying next node...`);
+        lastError = err;
+        continue; // Try the next model
+      }
     }
 
-    return text.trim();
+    // If we reach here, all models failed
+    throw lastError || new Error("All neural nodes failed to respond.");
   } catch (err) {
     // SENIOR DEV LOGGING: Print the real error to Render logs
     console.error('---------- [NEURAL ERROR REPORT] ----------');
