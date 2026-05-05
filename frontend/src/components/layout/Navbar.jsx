@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, Search, LayoutGrid, Cpu, X } from 'lucide-react';
+import { Menu, Search, LayoutGrid, Cpu, X, Database } from 'lucide-react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
