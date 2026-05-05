@@ -7,7 +7,7 @@ import RegisterPage from './pages/RegisterPage';
 
 function App() {
   return (
-    <div className="min-h-screen bg-[#020202]">
+    <div className="min-h-screen bg-black">
       <Navbar />
       <main>
         <Routes>

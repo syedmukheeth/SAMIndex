@@ -265,43 +265,81 @@ const CodeSearchPage = () => {
     setIndexStatus(null);
   };
 
+  const pollIndexStatus = async (jobId, owner, repo) => {
+    const interval = setInterval(async () => {
+      try {
+        const response = await getIndexStatus(jobId);
+        const { state, progress, result, failedReason } = response.data;
+        
+        if (state === 'completed') {
+          clearInterval(interval);
+          const count = result?.filesIndexed || 0;
+          setIndexStatus({ type: 'success', message: `Indexed ${count} files from ${repo.toUpperCase()}` });
+          setActiveRepo({ owner, repo });
+          setIsIndexing(false);
+          setRepoUrl('');
+        } else if (state === 'failed') {
+          clearInterval(interval);
+          setIndexStatus({ type: 'error', message: failedReason || 'Indexing failed' });
+          setIsIndexing(false);
+        } else {
+          setIndexStatus({ type: 'info', message: `Indexing ${repo}... ${progress || 0}%` });
+        }
+      } catch (err) {
+        console.error('Polling error:', err);
+        // Don't stop polling on single error unless it's 404
+        if (err.response?.status === 404) {
+          clearInterval(interval);
+          setIsIndexing(false);
+        }
+      }
+    }, 2000);
+    
+    // Cleanup on unmount or manual stop (not handled here but good practice)
+    return interval;
+  };
+
   const handleIndexRepo = async () => {
     let cleanPath = repoUrl.trim().toLowerCase();
-    
-    // Remove protocol
-    cleanPath = cleanPath.replace(/^https?:\/\//, '');
-    
-    // Remove github.com prefix if exists
-    if (cleanPath.startsWith('github.com/')) {
-      cleanPath = cleanPath.substring(11);
-    }
-    
-    // Remove trailing slash
-    cleanPath = cleanPath.replace(/\/$/, '');
-    
+    cleanPath = cleanPath.replace(/^https?:\/\//, '').replace(/^github.com\//, '').replace(/\/$/, '');
     const parts = cleanPath.split('/').filter(Boolean);
     
     if (parts.length < 2) {
-      setIndexStatus({ type: 'error', message: 'Provide owner and repository (e.g. syedmukheeth/SAMIndex)' });
+      setIndexStatus({ type: 'error', message: 'Provide owner/repo (e.g. facebook/react)' });
       return;
     }
 
-    const owner = parts[0];
-    const repo = parts[1];
+    const [owner, repo] = parts;
     setIsIndexing(true);
-    setIndexStatus(null);
+    setIndexStatus({ type: 'info', message: 'Connecting to neural index...' });
 
     try {
       const response = await indexRepo(owner, repo);
-      if (response.data) {
-        const fileCount = response.data.filesIndexed || response.data.fileCount || 0;
-        setIndexStatus({ type: 'success', message: `Indexed ${fileCount} files from ${repo.toUpperCase()}` });
-        setActiveRepo({ owner, repo });
-        setIsIndexing(false);
-        setRepoUrl('');
+      if (response.status === 'success') {
+        const { jobId, cached } = response.data;
+        
+        if (cached) {
+          setIndexStatus({ type: 'success', message: `Repository ${repo.toUpperCase()} is already indexed` });
+          setActiveRepo({ owner, repo });
+          setIsIndexing(false);
+          setRepoUrl('');
+          return;
+        }
+
+        if (jobId) {
+          setIndexStatus({ type: 'info', message: 'Job queued. Starting neural scan...' });
+          pollIndexStatus(jobId, owner, repo);
+        } else {
+          // Fallback if no jobId (should not happen with current backend)
+          setIndexStatus({ type: 'success', message: 'Indexing started' });
+          setIsIndexing(false);
+        }
       }
     } catch (error) {
-      setIndexStatus({ type: 'error', message: error.response?.data?.message || 'Indexing failed.' });
+      setIndexStatus({ 
+        type: 'error', 
+        message: error.response?.data?.message || 'Neural link failed. Check repository availability.' 
+      });
       setIsIndexing(false);
     }
   };
@@ -313,23 +351,26 @@ const CodeSearchPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-obsidian-950 text-white selection:bg-accent-blue/30 relative overflow-hidden">
+    <div className="min-h-screen bg-black text-white selection:bg-accent-blue/30 relative overflow-hidden">
       {/* Background Layer */}
-      <div className="fixed inset-0 mesh-bg opacity-40 pointer-events-none" />
-      <div className="fixed inset-0 noise pointer-events-none" />
+      <div className="fixed inset-0 mesh-bg opacity-30 pointer-events-none z-0" />
+      <div className="fixed inset-0 noise pointer-events-none z-0" />
       
       {/* Animated Blobs */}
-      <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-accent-blue/10 rounded-full blur-[120px] animate-pulse pointer-events-none" />
-      <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent-purple/10 rounded-full blur-[120px] animate-pulse pointer-events-none" style={{ animationDelay: '2s' }} />
+      <div className="fixed top-[-5%] left-[-5%] w-[45%] h-[45%] bg-accent-blue/5 rounded-full blur-[140px] animate-pulse pointer-events-none z-0" />
+      <div className="fixed bottom-[-5%] right-[-5%] w-[45%] h-[45%] bg-accent-purple/5 rounded-full blur-[140px] animate-pulse pointer-events-none z-0" style={{ animationDelay: '3s' }} />
 
       <div className="relative z-10 pt-32 pb-20 px-6">
         <header className="text-center mb-20">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="inline-block px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-md"
+            className="inline-block px-5 py-2 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-xl"
           >
-            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-accent-blue">Neural Neural Engine v2.0</span>
+            <div className="flex items-center gap-3">
+              <Sparkles size={14} className="text-accent-blue animate-pulse" />
+              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/60">Neural Engine v2.0</span>
+            </div>
           </motion.div>
           
           <motion.h1 
@@ -345,32 +386,33 @@ const CodeSearchPage = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-white/50 text-lg md:text-xl max-w-2xl mx-auto font-medium leading-relaxed"
+            className="text-white/40 text-lg md:text-xl max-w-2xl mx-auto font-medium leading-relaxed"
           >
             The lightning-fast code analysis engine for modern engineering teams. 
             Deep-link into any repository with neural-grade precision.
           </motion.p>
         </header>
 
-        <section className="max-w-4xl mx-auto mb-32">
+        <section className="max-w-4xl mx-auto mb-32 relative">
           <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.3 }}
-            className="relative group"
+            className="relative"
           >
-            <div className="absolute -inset-1 bg-gradient-to-r from-accent-blue/20 to-accent-purple/20 rounded-3xl blur-2xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-700"></div>
+            {/* Glow Effect */}
+            <div className="absolute -inset-4 bg-accent-blue/10 rounded-[3rem] blur-3xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-1000 pointer-events-none"></div>
             
-            <div className="relative glass-dark rounded-[2rem] border border-white/10 p-2 shadow-2xl focus-within:border-accent-blue/50 transition-all duration-500">
+            <div className="relative glass-dark rounded-[2.5rem] border border-white/10 p-3 shadow-2xl focus-within:border-accent-blue/30 transition-all duration-500 overflow-hidden">
               <div className="flex items-center px-6 py-6">
-                <div className="flex-1 relative group flex items-center">
-                  <div className="absolute left-0 flex items-center gap-3 pointer-events-none">
+                <div className="flex-1 relative flex items-center">
+                  <div className="absolute left-0 flex items-center gap-3 pointer-events-none z-10">
                     <Search className="text-white/20 group-focus-within:text-accent-blue transition-colors" size={24} />
                     {activeRepo && (
                       <motion.div 
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="px-2 py-1 rounded-md bg-accent-blue/10 border border-accent-blue/20 text-[10px] font-black text-accent-blue uppercase tracking-tighter"
+                        className="px-2 py-1 rounded-md bg-accent-blue/20 border border-accent-blue/30 text-[10px] font-black text-accent-blue uppercase tracking-tighter"
                       >
                         {activeRepo.repo}
                       </motion.div>
@@ -382,18 +424,18 @@ const CodeSearchPage = () => {
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder={activeRepo ? `Search in ${activeRepo.repo}...` : "Ask anything about the codebase..."}
-                    className="w-full bg-transparent text-2xl md:text-3xl font-semibold placeholder-white/10 focus:outline-none"
+                    className="w-full bg-transparent text-2xl md:text-3xl font-semibold placeholder-white/5 focus:outline-none relative z-0"
                     style={{ paddingLeft: activeRepo ? `${activeRepo.repo.length * 8 + 60}px` : '40px' }}
                   />
                 </div>
-                <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 text-white/30 font-mono text-xs ml-4">
+                <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 text-white/20 font-mono text-xs ml-4">
                   <span className="text-[10px] font-bold">/</span>
                 </div>
                 <motion.button
-                  whileHover={{ scale: 1.1, color: '#3b82f6' }}
+                  whileHover={{ scale: 1.1, color: '#0070f3' }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setIsHistoryOpen(true)}
-                  className="ml-4 p-2 text-white/30 hover:text-white transition-colors"
+                  className="ml-4 p-2 text-white/20 hover:text-white transition-colors relative z-20"
                   title="Search History"
                 >
                   <HistoryIcon size={24} />
@@ -402,51 +444,54 @@ const CodeSearchPage = () => {
             </div>
 
             <motion.div 
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="mt-6 flex flex-wrap items-center justify-center gap-4 relative z-50"
+              className="mt-8 flex flex-col items-center gap-6 relative z-30"
             >
-              <div className="flex items-center glass rounded-full px-2 py-1.5 border-white/10 min-w-[320px] focus-within:border-accent-blue/50 transition-all shadow-xl">
-                <Globe className="ml-3 text-white/30 w-4 h-4" />
+              <div className="flex items-center glass rounded-3xl pl-5 pr-2 py-2 border-white/10 min-w-[340px] md:min-w-[450px] focus-within:border-accent-blue/40 transition-all shadow-2xl relative z-40 bg-black/40 backdrop-blur-md">
+                <Globe className="text-white/30 w-4 h-4 shrink-0" />
                 <input
                   id="index-input"
                   type="text"
                   placeholder="github.com/owner/repo"
-                  className="bg-transparent px-4 py-1.5 text-xs text-white/80 focus:outline-none flex-1 placeholder-white/20"
+                  className="bg-transparent px-4 py-2 text-sm text-white/90 focus:outline-none flex-1 placeholder-white/10"
                   value={repoUrl}
                   onChange={(e) => setRepoUrl(e.target.value)}
                   onKeyDown={handleIndexKeyDown}
                 />
-                <div className="flex items-center gap-2">
+                <button 
+                  onClick={handleIndexRepo}
+                  disabled={isIndexing}
+                  className="bg-white hover:bg-accent-blue text-black hover:text-white text-[10px] font-black py-2.5 px-6 rounded-2xl transition-all uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed shadow-lg active:scale-95"
+                >
+                  {isIndexing ? (
+                    <div className="flex items-center gap-2">
+                      <Loader className="animate-spin" size={12} />
+                      <span>Indexing</span>
+                    </div>
+                  ) : 'Index Now'}
+                </button>
+                {activeRepo && (
                   <button 
-                    onClick={handleIndexRepo}
-                    disabled={isIndexing}
-                    className="bg-white/10 hover:bg-white text-white hover:text-black text-[10px] font-black py-2 px-4 rounded-full transition-all uppercase tracking-widest disabled:opacity-50"
+                    onClick={handleClearActiveRepo}
+                    className="ml-2 p-2 text-white/20 hover:text-red-400 transition-colors"
+                    title="Exit Repository Search"
                   >
-                    {isIndexing ? 'Indexing...' : 'Index Now'}
+                    <X size={16} />
                   </button>
-                  {activeRepo && (
-                    <button 
-                      onClick={handleClearActiveRepo}
-                      className="p-2 text-white/20 hover:text-red-400 transition-colors"
-                      title="Exit Repository Search"
-                    >
-                      <X size={14} />
-                    </button>
-                  )}
-                </div>
+                )}
               </div>
               
               <AnimatePresence>
                 {indexStatus && (
                   <motion.div 
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 10 }}
-                    className={`flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest ${indexStatus.type === 'success' ? 'text-green-400' : 'text-red-400'}`}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className={`flex items-center gap-3 px-6 py-3 rounded-2xl glass border-white/5 text-[10px] font-black uppercase tracking-[0.2em] ${indexStatus.type === 'success' ? 'text-green-400' : 'text-red-400'}`}
                   >
-                    {indexStatus.type === 'success' ? <CircleCheck size={12} /> : <CircleAlert size={12} />}
+                    {indexStatus.type === 'success' ? <CircleCheck size={14} /> : <CircleAlert size={14} />}
                     {indexStatus.message}
                   </motion.div>
                 )}

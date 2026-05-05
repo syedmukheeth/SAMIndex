@@ -25,34 +25,32 @@ const processIndexing = async (data, job = null) => {
       return { filesFound: 0, filesIndexed: 0 };
     }
 
-    const CONCURRENCY_LIMIT = 5;
+    const CONCURRENCY_LIMIT = 3; // Reduced for stability
     let indexedCount = 0;
+    let failCount = 0;
     const bulkOperations = [];
 
     // 3. Process Files in Batches
     for (let i = 0; i < filePaths.length; i += CONCURRENCY_LIMIT) {
       const batch = filePaths.slice(i, i + CONCURRENCY_LIMIT);
-      console.log(`[IndexingService] Processing batch ${Math.floor(i/CONCURRENCY_LIMIT) + 1}/${Math.ceil(filePaths.length/CONCURRENCY_LIMIT)}`);
       
       const contents = await Promise.all(
         batch.map(async (fileInfo) => {
           const { path, size } = fileInfo;
           
-          // SKIP extremely large files (> 500KB)
-          if (size > 512000) {
-            console.log(`[IndexingService] Skipping large file: ${path} (${size} bytes)`);
+          if (size > 1024000) { // Increased to 1MB
+            console.log(`[IndexingService] Skipping large file: ${path} (${(size/1024).toFixed(1)}KB)`);
             return null;
           }
 
           try {
             const content = await githubService.getFileContent(owner, repo, path);
-            if (!content) {
-              console.log(`[IndexingService] Empty or null content for: ${path}`);
-              return null;
-            }
+            if (!content || content.trim().length === 0) return null;
+            
             const ext = path.slice((Math.max(0, path.lastIndexOf(".")) || Infinity) + 1);
             return { repo, owner, path, content, lang: ext };
           } catch (err) {
+            failCount++;
             console.error(`[IndexingService] Failed to fetch ${path}:`, err.message);
             return null;
           }
@@ -66,7 +64,8 @@ const processIndexing = async (data, job = null) => {
               filter: { owner: file.owner, repo: file.repo, path: file.path },
               update: { 
                 ...file, 
-                lastIndexedSession: id 
+                lastIndexedSession: id,
+                updatedAt: new Date()
               },
               upsert: true
             }
@@ -75,46 +74,53 @@ const processIndexing = async (data, job = null) => {
         }
       });
 
-      if (bulkOperations.length >= 50) {
-        console.log(`[IndexingService] Executing bulkWrite for ${bulkOperations.length} files...`);
-        const result = await CodeFile.bulkWrite(bulkOperations);
-        console.log(`[IndexingService] bulkWrite success: ${result.upsertedCount} new, ${result.modifiedCount} updated`);
-        bulkOperations.length = 0;
-        
-        if (job) {
-          const progress = Math.min(10 + Math.floor((i / filePaths.length) * 80), 90);
-          await job.updateProgress(progress);
+      if (bulkOperations.length >= 20) { // Smaller batches for frequent updates
+        try {
+          await CodeFile.bulkWrite(bulkOperations, { ordered: false });
+          bulkOperations.length = 0;
+          
+          if (job) {
+            const progress = Math.min(10 + Math.floor((i / filePaths.length) * 85), 95);
+            await job.updateProgress(progress);
+          }
+        } catch (bErr) {
+          console.error('[IndexingService] bulkWrite partially failed:', bErr.message);
+          bulkOperations.length = 0; // Clear anyway to continue
         }
       }
     }
 
     // Final commit
     if (bulkOperations.length > 0) {
-      console.log(`[IndexingService] Executing final bulkWrite for ${bulkOperations.length} files...`);
-      const result = await CodeFile.bulkWrite(bulkOperations);
-      console.log(`[IndexingService] final bulkWrite success: ${result.upsertedCount} new, ${result.modifiedCount} updated`);
+      try {
+        await CodeFile.bulkWrite(bulkOperations, { ordered: false });
+      } catch (fErr) {
+        console.error('[IndexingService] Final bulkWrite failed:', fErr.message);
+      }
     }
 
-    // 4. Prune Ghost Files
-    console.log(`[IndexingService] Pruning ghost files for ${owner}/${repo} (Session: ${id})`);
-    const pruneResult = await CodeFile.deleteMany({
-      owner,
-      repo,
-      lastIndexedSession: { $ne: id }
-    });
-    console.log(`[IndexingService] Pruned ${pruneResult.deletedCount} old files.`);
+    // 4. Prune Ghost Files (Only if we had high success rate)
+    if (indexedCount > (filePaths.length * 0.5)) {
+      console.log(`[IndexingService] Pruning old files for ${owner}/${repo}`);
+      const pruneResult = await CodeFile.deleteMany({
+        owner,
+        repo,
+        lastIndexedSession: { $ne: id }
+      });
+      console.log(`[IndexingService] Pruned ${pruneResult.deletedCount} files.`);
+    }
 
     if (job) await job.updateProgress(100);
-    console.log(`[IndexingService] COMPLETED: Indexed ${indexedCount} files for ${owner}/${repo}`);
+    console.log(`[IndexingService] COMPLETED: ${indexedCount} indexed, ${failCount} failed.`);
     
     return {
       filesFound: filePaths.length,
       filesIndexed: indexedCount,
-      pruned: true,
+      filesFailed: failCount,
       sessionId: id
     };
   } catch (error) {
-    console.error(`[IndexingService] Critical failure indexing ${owner}/${repo}:`, error);
+    console.error(`[IndexingService] Critical failure:`, error.message);
     throw error;
   }
 };
