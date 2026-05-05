@@ -16,8 +16,10 @@ exports.explainCode = async (code, fileName) => {
       throw new Error("GEMINI_API_KEY is missing from environment variables.");
     }
 
-    // SENIOR DEV FIX: Sanitize the key to remove any accidental newlines or spaces from Render
+    // SENIOR DEV FIX: Sanitize the key to remove any accidental newlines or spaces
     const cleanKey = apiKey.trim().replace(/[\n\r]/g, '');
+    
+    // Force stable v1 API version if possible via the constructor or model calls
     const genAI = new GoogleGenerativeAI(cleanKey);
     
     // SAFETY: Truncate very large files to avoid API limits
@@ -31,14 +33,19 @@ exports.explainCode = async (code, fileName) => {
       ${truncatedCode}
     `;
 
-    // SENIOR DEV FIX: Multi-model fallback strategy
+    // Multi-model fallback strategy with version forcing
     const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"];
     let lastError = null;
 
     for (const modelName of modelsToTry) {
       try {
-        console.log(`[AI NEURAL LINK]: Attempting connection with ${modelName}...`);
-        const model = genAI.getGenerativeModel({ model: modelName });
+        console.log(`[AI NEURAL LINK]: Attempting connection with ${modelName} (v1)...`);
+        
+        // Some SDK versions support passing options here
+        const model = genAI.getGenerativeModel({ 
+          model: modelName,
+          apiVersion: 'v1' 
+        });
         
         const result = await model.generateContent(prompt);
         const response = await result.response;
@@ -49,22 +56,19 @@ exports.explainCode = async (code, fileName) => {
           return text.trim();
         }
       } catch (err) {
-        console.error(`[AI FAILOVER]: ${modelName} rejected connection. Trying next node...`);
+        console.error(`[AI FAILOVER]: ${modelName} node rejected. Reason: ${err.message}`);
         lastError = err;
-        continue; // Try the next model
+        continue; 
       }
     }
 
-    // If we reach here, all models failed
     throw lastError || new Error("All neural nodes failed to respond.");
   } catch (err) {
-    // SENIOR DEV LOGGING: Print the real error to Render logs
     console.error('---------- [NEURAL ERROR REPORT] ----------');
     console.error('Message:', err.message);
     console.error('Stack:', err.stack);
     console.error('-------------------------------------------');
 
-    // Return a more descriptive error to the user
-    return `AI Error: ${err.message}. Please check Render logs for technical details.`;
+    return `AI Error: ${err.message}. Please check your GEMINI_API_KEY and API restrictions.`;
   }
 };
