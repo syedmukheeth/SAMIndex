@@ -69,6 +69,11 @@ export const getIndexedRepos = async (limit = 100) => {
   return data;
 };
 
+export const claimOrphans = async () => {
+  const { data } = await api.post('/claim-orphans');
+  return data;
+};
+
 export const aiExplain = async (code, fileName) => {
   const { data } = await api.post('/ai-explain', { code, fileName });
   return data;

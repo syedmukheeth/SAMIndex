@@ -39,4 +39,7 @@ router.get('/search', authMiddleware.identify, searchController.searchAll);
 // User details route
 router.get('/user/:username', searchController.getUserDetails);
 
+// MIGRATION: Claim orphaned repos (repos with no user ID)
+router.post('/claim-orphans', authMiddleware.protect, searchController.claimOrphanRepos);
+
 module.exports = router;

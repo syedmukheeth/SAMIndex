@@ -121,3 +121,22 @@ exports.getUserDetails = catchAsync(async (req, res, next) => {
     data: responseData,
   });
 });
+
+/**
+ * @desc    Claim repositories that don't have an owner (Migration Tool)
+ * @route   POST /api/v1/claim-orphans
+ * @access  Private
+ */
+exports.claimOrphanRepos = catchAsync(async (req, res, next) => {
+  // Find all repos where user field is missing or null
+  const result = await Repository.updateMany(
+    { user: { $exists: false } },
+    { $set: { user: req.user._id } }
+  );
+
+  res.status(200).json({
+    status: 'success',
+    message: `${result.modifiedCount} neural workspaces restored to your account.`,
+    data: result
+  });
+});

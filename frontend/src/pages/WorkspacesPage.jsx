@@ -198,9 +198,27 @@ const WorkspacesPage = () => {
                   <Database size={32} className="text-white/20" />
                 </div>
                 <h3 className="text-2xl font-black mb-3">Neural Brain Empty</h3>
-                <p className="text-white/30 max-w-xs mx-auto text-sm leading-relaxed">
+                <p className="text-white/30 max-w-xs mx-auto text-sm leading-relaxed mb-8">
                   No repositories matching "{searchQuery}" have been neural-linked yet.
                 </p>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={async () => {
+                    try {
+                      setLoading(true);
+                      await import('../services/api').then(m => m.claimOrphans());
+                      window.location.reload();
+                    } catch (err) {
+                      console.error('Migration failed:', err);
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  className="px-8 py-3 rounded-2xl bg-accent-blue/10 border border-accent-blue/30 text-accent-blue text-xs font-black uppercase tracking-widest hover:bg-accent-blue hover:text-white transition-all shadow-[0_0_20px_rgba(59,130,246,0.1)]"
+                >
+                  Restore My Workspaces
+                </motion.button>
               </div>
             )}
           </AnimatePresence>
