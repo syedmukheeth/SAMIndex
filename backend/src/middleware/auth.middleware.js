@@ -49,6 +49,18 @@ exports.protect = async (req, res, next) => {
  */
 exports.identify = async (req, res, next) => {
   try {
+    // 1) Check for internal API Key first
+    const apiKey = req.headers['x-api-key'];
+    if (apiKey && apiKey === (process.env.API_KEY || 'samindex_secret_key_2026')) {
+      req.isDeveloper = true;
+      // Assign the first available user as a 'system' user for developer actions
+      // This ensures attribution for indexing/history works even without a JWT
+      const systemUser = await User.findOne().sort({ createdAt: 1 });
+      if (systemUser) {
+        req.user = systemUser;
+      }
+    }
+
     let token;
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
       token = req.headers.authorization.split(' ')[1];

@@ -36,9 +36,10 @@ exports.searchAll = catchAsync(async (req, res, next) => {
   // Fields to exclude to reduce response size
   const excludeFields = '-__v -updatedAt -createdAt';
 
-    // 3. Perform parallel searches with .lean() for speed
-    // RECENT WORKSPACES PRIVACY: Only show repos belonging to the user
-    const repoQuery = req.user ? { ...searchQuery, user: req.user._id } : { _id: null }; // Guests see nothing
+    // RECENT WORKSPACES PRIVACY: Developers see all, users see their own, guests see nothing
+    const repoQuery = req.isDeveloper 
+      ? searchQuery 
+      : (req.user ? { ...searchQuery, user: req.user._id } : { _id: null });
 
     const [users, repositories] = await Promise.all([
       q 
@@ -128,15 +129,25 @@ exports.getUserDetails = catchAsync(async (req, res, next) => {
  * @access  Private
  */
 exports.claimOrphanRepos = catchAsync(async (req, res, next) => {
+  if (!req.user) {
+    return next(new AppError('No authenticated user found to claim workspaces. Please log in or use Developer Mode.', 401));
+  }
+
   // Find all repos where user field is missing or null
   const result = await Repository.updateMany(
-    { user: { $exists: false } },
+    { $or: [ { user: { $exists: false } }, { user: null } ] },
     { $set: { user: req.user._id } }
   );
 
+  // Clear search cache to reflect changes immediately
+  cache.flushAll();
+
   res.status(200).json({
     status: 'success',
-    message: `${result.modifiedCount} neural workspaces restored to your account.`,
-    data: result
+    message: `${result.modifiedCount} neural workspaces restored to account: ${req.user.name}`,
+    data: {
+      modifiedCount: result.modifiedCount,
+      user: req.user.name
+    }
   });
 });
