@@ -79,4 +79,9 @@ export const aiExplain = async (code, fileName) => {
   return data;
 };
 
+export const repoSummary = async (owner, repo) => {
+  const { data } = await api.post('/repo-summary', { owner, repo });
+  return data;
+};
+
 export default api;

@@ -6,7 +6,7 @@ import {
   Zap, Hash, ExternalLink, Globe, Sparkles, Command, ArrowRight, ArrowLeft, X,
   History as HistoryIcon
 } from 'lucide-react';
-import { searchCode, indexRepo, getIndexStatus, getIndexedRepos, getRepoDetails, aiExplain } from '../services/api';
+import { searchCode, indexRepo, getIndexStatus, getIndexedRepos, getRepoDetails, aiExplain, repoSummary } from '../services/api';
 import { useDebounce } from '../hooks/useDebounce';
 import { useSearchParams, Link } from 'react-router-dom';
 import Skeleton from '../components/ui/Skeleton';
@@ -272,6 +272,8 @@ const CodeSearchPage = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [indexedRepos, setIndexedRepos] = useState([]);
   const [loadingRepos, setLoadingRepos] = useState(false);
+  const [workspaceSummary, setWorkspaceSummary] = useState(null);
+  const [isSummarizing, setIsSummarizing] = useState(false);
   const searchInputRef = React.useRef(null);
 
   const debouncedQuery = useDebounce(query, 500);
@@ -338,8 +340,12 @@ const CodeSearchPage = () => {
           setActiveRepo({ 
             owner: response.data.owner, 
             repo: response.data.name, 
-            isIndexed: response.data.isIndexed 
+            isIndexed: response.data.isIndexed,
+            description: response.data.description 
           });
+          if (response.data.description) {
+            setWorkspaceSummary(response.data.description);
+          }
         } catch (err) {
           console.warn('Workspace metadata sync failed:', err.message);
           // Fallback to basic info if not in our DB yet
@@ -697,6 +703,7 @@ const CodeSearchPage = () => {
                       setActiveRepo(null);
                       setSearchParams({});
                       setRepoUrl('');
+                      setWorkspaceSummary(null);
                     }}
                     className="ml-2 p-1.5 hover:bg-accent-blue/20 rounded-lg text-accent-blue/50 hover:text-accent-blue transition-all"
                     title="Exit Workspace"
@@ -747,9 +754,39 @@ const CodeSearchPage = () => {
                     : `Legacy search mode. Neural indexing is recommended for ${activeRepo.owner}/${activeRepo.repo}.`}
                 </span>
                 {activeRepo.isIndexed ? (
-                   <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-[0.2em] shadow-[0_0_20px_rgba(16,185,129,0.1)]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                      Neural Link Established
+                   <div className="flex flex-col items-center gap-4">
+                     <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-[0.2em] shadow-[0_0_20px_rgba(16,185,129,0.1)]">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        Neural Link Established
+                     </div>
+                     {workspaceSummary ? (
+                       <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="px-6 py-3 rounded-2xl bg-white/5 border border-white/5 italic text-sm text-white/60 max-w-lg"
+                       >
+                         "{workspaceSummary}"
+                       </motion.div>
+                     ) : (
+                       <button 
+                        onClick={async () => {
+                          setIsSummarizing(true);
+                          try {
+                            const res = await repoSummary(activeRepo.owner, activeRepo.repo);
+                            setWorkspaceSummary(res.data.summary);
+                          } catch (e) {
+                            console.error(e);
+                          } finally {
+                            setIsSummarizing(false);
+                          }
+                        }}
+                        disabled={isSummarizing}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent-blue/10 border border-accent-blue/20 text-accent-blue text-[10px] font-black uppercase tracking-widest hover:bg-accent-blue/20 transition-all"
+                       >
+                         {isSummarizing ? <Loader size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                         Generate Workspace Insight
+                       </button>
+                     )}
                    </div>
                 ) : (
                   <button 

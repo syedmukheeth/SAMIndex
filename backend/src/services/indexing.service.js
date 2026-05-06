@@ -124,7 +124,20 @@ const processIndexing = async (data, job = null) => {
             await fsPromises.unlink(zipPath);
           } catch (e) { console.warn('Cleanup failed:', e.message); }
 
-          return await finalizeIndexing(owner, repo, id, files.length, indexedCount, 0, job, jobId);
+          // NEW: Auto-generate AI summary if README exists
+          let repoSummary = null;
+          const readmeFile = files.find(f => f.relPath.toLowerCase() === 'readme.md');
+          if (readmeFile) {
+            try {
+              const aiService = require('./ai.service');
+              const readmeContent = await fsPromises.readFile(readmeFile.fullPath, 'utf-8');
+              repoSummary = await aiService.summarizeRepository(readmeContent, repo);
+            } catch (aiErr) {
+              console.warn('[IndexingService] AI Summary failed:', aiErr.message);
+            }
+          }
+
+          return await finalizeIndexing(owner, repo, id, files.length, indexedCount, 0, job, jobId, repoSummary);
         }
       }
     } catch (turboErr) {
@@ -236,7 +249,20 @@ const processIndexing = async (data, job = null) => {
       }
     }
 
-    return await finalizeIndexing(owner, repo, id, filePaths.length, indexedCount, failCount, job, jobId);
+    // NEW: Auto-generate AI summary if README exists (Fallback Mode)
+    let repoSummary = null;
+    const readmeFile = filePaths.find(f => f.path.toLowerCase() === 'readme.md');
+    if (readmeFile) {
+      try {
+        const aiService = require('./ai.service');
+        const readmeContent = await githubService.getBlobContent(owner, repo, readmeFile.sha);
+        repoSummary = await aiService.summarizeRepository(readmeContent, repo);
+      } catch (aiErr) {
+        console.warn('[IndexingService] AI Summary failed (fallback):', aiErr.message);
+      }
+    }
+
+    return await finalizeIndexing(owner, repo, id, filePaths.length, indexedCount, failCount, job, jobId, repoSummary);
   } catch (error) {
     console.error(`[IndexingService] Critical failure:`, error.message);
     if (jobId && !job) {
@@ -250,7 +276,7 @@ const processIndexing = async (data, job = null) => {
   }
 };
 
-const finalizeIndexing = async (owner, repo, id, found, indexed, failed, job, jobId) => {
+const finalizeIndexing = async (owner, repo, id, found, indexed, failed, job, jobId, repoSummary = null) => {
   // Prune Ghost Files (Only if we had high success rate)
   if (indexed > (found * 0.5)) {
     console.log(`[IndexingService] Pruning old files for ${owner}/${repo}`);
@@ -277,7 +303,11 @@ const finalizeIndexing = async (owner, repo, id, found, indexed, failed, job, jo
   // Update Repository Metadata
   await Repository.findOneAndUpdate(
     { owner, name: repo },
-    { isIndexed: true, lastIndexedAt: new Date() }
+    { 
+      isIndexed: true, 
+      lastIndexedAt: new Date(),
+      description: repoSummary || undefined // Update with AI summary if available
+    }
   );
 
   console.log(`[IndexingService] COMPLETED: ${indexed} indexed, ${failed} failed.`);

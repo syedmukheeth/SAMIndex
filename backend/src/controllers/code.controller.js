@@ -365,3 +365,52 @@ exports.getAIExplanation = catchAsync(async (req, res, next) => {
     data: { explanation }
   });
 });
+
+/**
+ * @desc    Get AI-powered summary for a repository
+ * @route   POST /api/v1/repo-summary
+ */
+exports.getRepoSummary = catchAsync(async (req, res, next) => {
+  const { owner, repo } = req.body;
+
+  if (!owner || !repo) {
+    return next(new AppError('Owner and repo name are required', 400));
+  }
+
+  const githubService = require('../services/github.service');
+  const aiService = require('../services/ai.service');
+
+  try {
+    // 1. Try to find README
+    const repoFiles = await githubService.getRepoFiles(owner, repo);
+    const readmeFile = repoFiles.find(f => f.path.toLowerCase() === 'readme.md');
+    
+    let content = '';
+    if (readmeFile) {
+      content = await githubService.getBlobContent(owner, repo, readmeFile.sha);
+    } else {
+      // Fallback: use top 10 file paths as context
+      content = `File Structure: ${repoFiles.slice(0, 15).map(f => f.path).join(', ')}`;
+    }
+
+    const summary = await aiService.summarizeRepository(content, repo);
+
+    // 2. Persist the summary to the database
+    const Repository = require('../models/repository.model');
+    await Repository.findOneAndUpdate(
+      { owner: owner.toLowerCase(), name: repo.toLowerCase() },
+      { description: summary }
+    );
+
+    res.status(200).json({
+      status: 'success',
+      data: { summary }
+    });
+  } catch (err) {
+    console.error('[Controller] Repo summary failed:', err.message);
+    res.status(200).json({
+      status: 'success',
+      data: { summary: "Neural Analysis Offline: Workspace context established but summary generation skipped." }
+    });
+  }
+});

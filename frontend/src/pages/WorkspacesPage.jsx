@@ -151,8 +151,8 @@ const WorkspacesPage = () => {
                       <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.5)]" />
                     </div>
 
-                    <p className="text-sm text-white/40 line-clamp-2 mb-8 flex-1 italic">
-                      {repo.description || "Deep neural scan complete. Contextual relationships established for this code repository."}
+                    <p className={`text-sm ${repo.description ? 'text-white/60' : 'text-white/40'} line-clamp-2 mb-8 flex-1 italic leading-relaxed`}>
+                      {repo.description ? `"${repo.description}"` : "Deep neural scan complete. Contextual relationships established for this code repository."}
                     </p>
 
                     <div className="grid grid-cols-2 gap-4 mt-auto">
