@@ -1,116 +1,127 @@
-# <p align="center"><img src="./assets/logo.png" width="120" alt="SAMIndex Logo"></p>
-# <p align="center">SAMIndex</p>
-### <p align="center">Next-Generation Code Intelligence & Repository Indexing</p>
+<p align="center">
+  <img src="./C:\Users\Windows\.gemini\antigravity\brain\08800470-eea3-473c-99dd-fd05337f354b\samindex_hero_logo_1778037626923.png" width="240" alt="SAMIndex Neural Engine">
+</p>
+
+<h1 align="center">SAMIndex</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-1.0.0-blue?style=for-the-badge&logo=none" alt="Version">
+  <b>Next-Generation Neural Code Intelligence & Repository Indexing</b>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Version-1.1.0-blue?style=for-the-badge&logo=none" alt="Version">
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge&logo=none" alt="License">
-  <img src="https://img.shields.io/badge/Frontend-Vite%20%2B%20React-61DAFB?style=for-the-badge&logo=react" alt="Frontend">
-  <img src="https://img.shields.io/badge/Backend-Node.js%20%2B%20Express-339933?style=for-the-badge&logo=node.js" alt="Backend">
+  <img src="https://img.shields.io/badge/Neural_Engine-Gemini_%2F_NVIDIA-purple?style=for-the-badge&logo=google-gemini" alt="Neural Engine">
+  <img src="https://img.shields.io/badge/Infrastructure-Vercel_%2B_Render-black?style=for-the-badge&logo=vercel" alt="Infrastructure">
 </p>
 
 ---
 
-## 🌌 Overview
-**SAMIndex** is a high-fidelity code intelligence platform designed for senior developers who need instant, neural-powered insights across their entire repository ecosystem. By leveraging advanced indexing algorithms and a "Digital Obsidian" glassmorphism aesthetic, SAMIndex transforms how you explore, search, and understand complex codebases.
+## 🌌 The Neural Vision
+**SAMIndex** is a high-fidelity code intelligence platform engineered for senior developers. It doesn't just search code—it **understands** it. By building a "Neural Brain" of your repositories using state-of-the-art LLMs (Gemini & NVIDIA NIM), SAMIndex provides instant, contextual insights that transform complex codebases into searchable, human-readable intelligence.
 
-## ✨ Key Features
-- 🧠 **Neural Repository Indexing**: High-speed background scanning using BullMQ and Redis for massive repository support.
-- 🔍 **Hybrid Search Engine**: Seamlessly switch between **Global Search** (cross-repo) and **Workspace Mode** (repo-locked) for targeted exploration.
-- 💎 **Digital Obsidian UI**: A premium, state-of-the-art interface built with glassmorphism, fluid animations (Framer Motion), and dark-mode optimization.
-- 🔐 **Secure Intelligence**: Native Google OAuth 2.0 integration and secure "Guest Mode" for flexible access.
-- ⚡ **Real-time Synchronization**: Live progress tracking during indexing with neural-style scanning animations.
-
----
-
-## 🛠 Tech Stack
-
-### Frontend
-- **Framework**: [React 18](https://reactjs.org/) + [Vite](https://vitejs.dev/)
-- **Styling**: Vanilla CSS (Premium Custom Tokens)
-- **Animations**: [Framer Motion](https://www.framer.com/motion/)
-- **Icons**: [Lucide React](https://lucide.dev/)
-- **State Management**: React Hooks & Context API
-
-### Backend
-- **Runtime**: [Node.js](https://nodejs.org/)
-- **Framework**: [Express.js](https://expressjs.com/)
-- **Database**: [MongoDB Atlas](https://www.mongodb.com/atlas/database)
-- **Caching & Queues**: [Upstash Redis](https://upstash.com/) + [BullMQ](https://docs.bullmq.io/)
-- **Authentication**: [Passport.js](http://www.passportjs.org/) (Google Strategy) + JWT
-
-### Infrastructure
-- **Frontend Hosting**: [Vercel](https://vercel.com/)
-- **Backend Hosting**: [Render](https://render.com/)
-- **Version Control**: Git & GitHub
+## 🧠 Neural Features
+- **Dual-Provider AI Engine**: Native support for **Google Gemini 1.5 Flash** and **NVIDIA NIM (Llama 3.1)**. The engine automatically detects your API key and optimizes prompts for the active model.
+- **Automated Workspace Summarization**: During indexing, SAMIndex automatically analyzes your `README.md` to generate a high-level value proposition for the repository.
+- **Turbo Indexing Strategy**: 
+  - **Primary**: High-speed ZIP-based scanning (reduces API calls by 90%).
+  - **Fallback**: Granular GitHub API discovery for edge cases.
+- **Digital Obsidian UI**: A premium, state-of-the-art interface built with **glassmorphism**, fluid Framer Motion animations, and dark-mode optimization.
+- **Workspace Isolation**: Deep-search within a specific repository or perform global neural queries across your entire indexed ecosystem.
 
 ---
 
-## 🚀 Quick Start
+## 🏗 System Architecture
+
+SAMIndex is built on a resilient, event-driven architecture designed for high-throughput repository processing.
+
+```mermaid
+graph TD
+    User((Senior Developer)) -->|React Frontend| WebApp[Vite + Glassmorphism UI]
+    WebApp -->|REST API| API[Express Backend]
+    
+    subgraph "Neural Core"
+        API -->|Queue Job| Redis[(Upstash Redis)]
+        Redis -->|Process| Worker[BullMQ Worker]
+        Worker -->|Turbo Index| GitHub[(GitHub API)]
+        Worker -->|Save| Mongo[(MongoDB Atlas)]
+    end
+    
+    subgraph "Intelligence Layer"
+        Worker -->|Summarize| AI[Neural Engine]
+        API -->|Explain Code| AI
+        AI -->|Gemini/NVIDIA| Models{LLM Models}
+    end
+    
+    Mongo -->|Neural Search| WebApp
+```
+
+### Technical Specs
+| Layer | Technology |
+| :--- | :--- |
+| **Frontend** | React 18, Vite, Framer Motion, Vanilla CSS (Design Tokens) |
+| **Backend** | Node.js, Express, Passport.js (Google Strategy) |
+| **Data Core** | MongoDB Atlas, Upstash Redis (Serverless) |
+| **Background** | BullMQ (Event-driven indexing) |
+| **AI** | @google/generative-ai, NVIDIA NIM (Llama 3.1) |
+
+---
+
+## 🛠 Tech Stack Details
+
+### Frontend: Digital Obsidian Aesthetic
+We avoided generic UI libraries to build a custom **Design System**.
+- **Glassmorphism**: Layered transparency with backdrop-blur filters for a premium feel.
+- **Micro-interactions**: Subtle haptic-like animations using Framer Motion.
+- **Neural Scan UX**: Interactive progress bars and "neural establish" sequences during indexing.
+
+### Backend: Distributed Indexing
+- **ZIP-Stream Processing**: We download repository snapshots and process them in-memory to bypass GitHub's strict rate limits.
+- **Atomic Persistence**: Files are indexed with full path context and owner attribution.
+- **Identity Middleware**: Sophisticated auth layer that supports standard JWT sessions and "Developer Mode" via internal API keys.
+
+---
+
+## 🚀 Installation & Setup
 
 ### 1. Prerequisites
 - Node.js (v18+)
-- MongoDB connection string
-- Upstash Redis credentials
-- GitHub Personal Access Token (for indexing)
-- Google OAuth Credentials
+- MongoDB Atlas Instance
+- Upstash Redis (or local Redis)
+- **AI Keys**: Either a Google Gemini Key or NVIDIA NIM Key (stored in `GEMINI_API_KEY`)
 
-### 2. Installation
-```bash
-# Clone the repository
-git clone https://github.com/syedmukheeth/SAMIndex.git
-
-# Install Backend dependencies
-cd backend
-npm install
-
-# Install Frontend dependencies
-cd ../frontend
-npm install
-```
-
-### 3. Environment Setup
-Create a `.env` file in the `backend` directory based on `.env.example`:
+### 2. Environment Configuration (`backend/.env`)
 ```env
 PORT=5000
 MONGODB_URI=your_mongodb_uri
 JWT_SECRET=your_jwt_secret
 GOOGLE_CLIENT_ID=your_google_id
 GOOGLE_CLIENT_SECRET=your_google_secret
-GOOGLE_CALLBACK_URL=http://localhost:5000/api/v1/auth/google/callback
-FRONTEND_URL=http://localhost:5173
 GITHUB_TOKEN=your_github_token
+GEMINI_API_KEY=your_ai_key (detects nvapi- prefix automatically)
 REDIS_HOST=your_redis_host
 REDIS_PORT=your_redis_port
 REDIS_PASSWORD=your_redis_password
-REDIS_TLS=true
 ```
 
-### 4. Running Locally
+### 3. Execution
 ```bash
-# Start Backend
-cd backend
-npm run dev
+# Clone & Install
+git clone https://github.com/syedmukheeth/SAMIndex.git
+npm install # in both frontend and backend
 
-# Start Frontend (new terminal)
-cd frontend
-npm run dev
+# Start Development Environment
+npm run dev # inside respective folders
 ```
 
 ---
 
-## 🛡 Security & Authentication
-SAMIndex implements a multi-layer security model:
-1. **JWT Strategy**: Stateless authentication via encrypted JSON Web Tokens.
-2. **OAuth 2.0**: Secure social login via Google.
-3. **CORS Policies**: Strict origin filtering to protect API integrity.
-4. **Helmet.js**: Enhanced security headers for production safety.
-
 ## 📈 Roadmap
-- [ ] AI-Powered Code Summarization (GPT-4 Integration)
-- [ ] Deep Link Search (specific line-level navigation)
-- [ ] Team Collaboration Workspaces
-- [ ] Multi-provider OAuth (GitHub, GitLab, Bitbucket)
+- [x] AI-Powered Code Summarization
+- [x] Multi-provider AI support (Gemini + NVIDIA)
+- [ ] **Neural Link 2.0**: Deep-link search (jump to specific line numbers)
+- [ ] **Collaborative Brains**: Shared workspaces for teams
+- [ ] **Local Mode**: Indexing local directories via CLI
 
 ---
 
