@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./C:\Users\Windows\.gemini\antigravity\brain\08800470-eea3-473c-99dd-fd05337f354b\samindex_hero_logo_1778037626923.png" width="240" alt="SAMIndex Neural Engine">
+  <img src="./assets/neural_logo.png" width="240" alt="SAMIndex Neural Engine">
 </p>
 
 <h1 align="center">SAMIndex</h1>
