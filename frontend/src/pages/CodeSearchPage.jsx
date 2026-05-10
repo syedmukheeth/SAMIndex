@@ -272,7 +272,7 @@ const CodeSearchPage = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [indexedRepos, setIndexedRepos] = useState([]);
   const [loadingRepos, setLoadingRepos] = useState(false);
-  const [workspaceSummary, setWorkspaceSummary] = useState(null);
+  const [repoInsight, setRepoInsight] = useState(null);
   const [isSummarizing, setIsSummarizing] = useState(false);
   const searchInputRef = React.useRef(null);
 
@@ -344,10 +344,10 @@ const CodeSearchPage = () => {
             description: response.data.description 
           });
           if (response.data.description) {
-            setWorkspaceSummary(response.data.description);
+            setRepoInsight(response.data.description);
           }
         } catch (err) {
-          console.warn('Workspace metadata sync failed:', err.message);
+          console.warn('Repo metadata sync failed:', err.message);
           // Fallback to basic info if not in our DB yet
           setActiveRepo({ owner, repo, isIndexed: false });
         }
@@ -695,7 +695,7 @@ const CodeSearchPage = () => {
                 >
                   <Globe size={14} className="text-accent-blue" />
                   <div className="flex flex-col">
-                    <span className="text-[8px] font-black tracking-widest text-accent-blue/50 uppercase leading-none">Active Workspace</span>
+                    <span className="text-[8px] font-black tracking-widest text-accent-blue/50 uppercase leading-none">Active Repo</span>
                     <span className="text-sm font-bold text-white">{(activeRepo || previewRepo).owner} / {(activeRepo || previewRepo).repo}</span>
                   </div>
                   <button 
@@ -703,10 +703,10 @@ const CodeSearchPage = () => {
                       setActiveRepo(null);
                       setSearchParams({});
                       setRepoUrl('');
-                      setWorkspaceSummary(null);
+                      setRepoInsight(null);
                     }}
                     className="ml-2 p-1.5 hover:bg-accent-blue/20 rounded-lg text-accent-blue/50 hover:text-accent-blue transition-all"
-                    title="Exit Workspace"
+                    title="Exit Repo"
                   >
                     <X size={14} />
                   </button>
@@ -759,13 +759,13 @@ const CodeSearchPage = () => {
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                         Neural Link Established
                      </div>
-                     {workspaceSummary ? (
+                     {repoInsight ? (
                        <motion.div 
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         className="px-6 py-3 rounded-2xl bg-white/5 border border-white/5 italic text-sm text-white/60 max-w-lg"
                        >
-                         "{workspaceSummary}"
+                         "{repoInsight}"
                        </motion.div>
                      ) : (
                        <button 
@@ -773,7 +773,7 @@ const CodeSearchPage = () => {
                           setIsSummarizing(true);
                           try {
                             const res = await repoSummary(activeRepo.owner, activeRepo.repo);
-                            setWorkspaceSummary(res.data.summary);
+                            setrepoInsight(res.data.summary);
                           } catch (e) {
                             console.error(e);
                           } finally {
@@ -784,7 +784,7 @@ const CodeSearchPage = () => {
                         className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent-blue/10 border border-accent-blue/20 text-accent-blue text-[10px] font-black uppercase tracking-widest hover:bg-accent-blue/20 transition-all"
                        >
                          {isSummarizing ? <Loader size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                         Generate Workspace Insight
+                         Generate Repo Insight
                        </button>
                      )}
                    </div>
@@ -834,7 +834,7 @@ const CodeSearchPage = () => {
                     animate={{ opacity: 1, x: 0 }}
                     onClick={handleClearActiveRepo}
                     className="ml-4 p-3 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all group"
-                    title="Exit Workspace"
+                    title="Exit Repo"
                   >
                     <X size={20} className="group-hover:rotate-90 transition-transform" />
                   </motion.button>
@@ -900,13 +900,13 @@ const CodeSearchPage = () => {
                 <div className="flex items-center justify-between px-2">
                   <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white/30 flex items-center gap-2">
                     <Cpu size={14} className="text-accent-blue" />
-                    Recently Indexed Workspaces
+                    Your Recently Indexed Repos
                   </h3>
                   <Link 
-                    to="/workspaces" 
+                    to="/repos" 
                     className="text-[10px] font-black uppercase tracking-widest text-accent-blue hover:text-white transition-colors flex items-center gap-2 group"
                   >
-                    View Neural Brain
+                    View Your Repo History
                     <ArrowLeft size={12} className="rotate-180 group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </div>
@@ -944,7 +944,7 @@ const CodeSearchPage = () => {
                       </div>
                       <h4 className="text-sm font-bold mb-2">Neural Brain Empty</h4>
                       <p className="text-[10px] text-white/30 max-w-[200px] mx-auto leading-relaxed mb-6">
-                        No neural workspaces established yet. You can restore your legacy indexed repos below.
+                        No neural repos established yet. You can restore your legacy indexed repos below.
                       </p>
                       <motion.button
                         whileHover={{ scale: 1.05 }}
@@ -962,7 +962,7 @@ const CodeSearchPage = () => {
                         }}
                         className="px-6 py-2.5 rounded-2xl bg-accent-blue/10 border border-accent-blue/30 text-accent-blue text-[10px] font-black uppercase tracking-widest hover:bg-accent-blue hover:text-white transition-all shadow-[0_0_20px_rgba(59,130,246,0.1)]"
                       >
-                        Restore My Workspaces
+                        Restore My Repos
                       </motion.button>
                     </div>
                   )}
@@ -1021,7 +1021,7 @@ const CodeSearchPage = () => {
                       <Globe className="text-accent-blue" size={20} />
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-[10px] font-black text-accent-blue uppercase tracking-widest leading-none mb-1">Workspace</span>
+                      <span className="text-[10px] font-black text-accent-blue uppercase tracking-widest leading-none mb-1">Repository</span>
                       <span className="text-xl font-bold text-white tracking-tight">{repoKey}</span>
                     </div>
                     <div className="ml-auto flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/5">

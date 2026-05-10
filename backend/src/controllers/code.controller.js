@@ -8,6 +8,7 @@ const SearchHistory = require('../models/SearchHistory');
 const { isRedisConnected } = require('../config/redis');
 const indexingService = require('../services/indexing.service');
 const Repository = require('../models/repository.model');
+const UserRepo = require('../models/userRepo.model');
 
 /**
  * @desc    Add repository indexing task to queue
@@ -73,6 +74,18 @@ exports.indexRepository = catchAsync(async (req, res, next) => {
         isIndexed: false,
         user: req.user._id // ASSOCIATE WITH USER
       });
+    }
+  }
+
+  // SENIOR DEV PERSONALIZATION: Record relationship in UserRepo
+  if (req.user) {
+    const repoRecord = existingRepo || await Repository.findOne({ owner: owner.toLowerCase(), name: repo.toLowerCase() });
+    if (repoRecord) {
+      await UserRepo.findOneAndUpdate(
+        { userId: req.user._id, repositoryId: repoRecord._id },
+        { lastAccessedAt: new Date() },
+        { upsert: true, new: true }
+      ).catch(err => console.error('[UserRepo Association Failed]:', err.message));
     }
   }
 

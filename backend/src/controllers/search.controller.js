@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Repository = require('../models/repository.model');
+const UserRepo = require('../models/userRepo.model');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const cache = require('../utils/cache');
@@ -36,27 +37,42 @@ exports.searchAll = catchAsync(async (req, res, next) => {
   // Fields to exclude to reduce response size
   const excludeFields = '-__v -updatedAt -createdAt';
 
-    // RECENT WORKSPACES PRIVACY: Developers see all, users see their own, guests see nothing
-    const repoQuery = req.isDeveloper 
-      ? searchQuery 
-      : (req.user ? { ...searchQuery, user: req.user._id } : { _id: null });
-
-    const [users, repositories] = await Promise.all([
-      q 
-        ? User.find(searchQuery, textScoreProjection)
-            .select(excludeFields)
-            .sort(sort === 'score' ? { score: -1 } : textScoreProjection)
-            .skip(skip)
-            .limit(Number(limit))
-            .lean()
-        : Promise.resolve([]),
-      Repository.find(repoQuery, textScoreProjection)
+  // RECENT WORKSPACES PRIVACY: Developers see all, users see their own, guests see nothing
+  let repositories = [];
+  if (req.isDeveloper && !req.user) {
+    // True developer/system mode: show all
+    repositories = await Repository.find(searchQuery, textScoreProjection)
+      .select(excludeFields)
+      .sort(q ? (sort === 'score' ? { stars: -1 } : textScoreProjection) : { lastIndexedAt: -1 })
+      .skip(skip)
+      .limit(Number(limit))
+      .lean();
+  } else if (req.user) {
+    // Personalized Mode: Only show what THIS user has indexed or accessed
+    const userRepoLinks = await UserRepo.find({ userId: req.user._id })
+      .select('repositoryId')
+      .lean();
+    
+    const repoIds = userRepoLinks.map(link => link.repositoryId);
+    
+    if (repoIds.length > 0) {
+      repositories = await Repository.find({ ...searchQuery, _id: { $in: repoIds } }, textScoreProjection)
         .select(excludeFields)
         .sort(q ? (sort === 'score' ? { stars: -1 } : textScoreProjection) : { lastIndexedAt: -1 })
         .skip(skip)
         .limit(Number(limit))
-        .lean(),
-    ]);
+        .lean();
+    }
+  }
+
+  const users = q 
+    ? await User.find(searchQuery, textScoreProjection)
+        .select(excludeFields)
+        .sort(sort === 'score' ? { score: -1 } : textScoreProjection)
+        .skip(skip)
+        .limit(Number(limit))
+        .lean()
+    : [];
 
   const responseData = {
     results: {

@@ -2,7 +2,7 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
 import CodeSearchPage from './pages/CodeSearchPage';
-import WorkspacesPage from './pages/WorkspacesPage';
+import RepoHistoryPage from './pages/RepoHistoryPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 
@@ -14,7 +14,7 @@ function App() {
         <Routes>
           <Route path="/" element={<CodeSearchPage />} />
           <Route path="/code" element={<CodeSearchPage />} />
-          <Route path="/workspaces" element={<WorkspacesPage />} />
+          <Route path="/repos" element={<RepoHistoryPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
         </Routes>

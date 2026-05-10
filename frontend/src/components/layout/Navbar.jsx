@@ -86,9 +86,9 @@ const Navbar = () => {
             />
             <NavLink 
               icon={<Database size={14} />} 
-              label="Brain" 
-              active={location.pathname === '/workspaces'} 
-              onClick={() => navigate('/workspaces')}
+              label="Repos" 
+              active={location.pathname === '/repos'} 
+              onClick={() => navigate('/repos')}
             />
             <NavLink 
               icon={<Cpu size={14} />} 
@@ -175,7 +175,7 @@ const Navbar = () => {
           >
             <div className="p-6 flex flex-col gap-4">
               <MobileNavLink label="Search" icon={<Search size={20} />} onClick={() => handleNavClick('search-input', '/')} />
-              <MobileNavLink label="Brain" icon={<Database size={20} />} onClick={() => { navigate('/workspaces'); setIsMobileMenuOpen(false); }} />
+              <MobileNavLink label="Repos" icon={<Database size={20} />} onClick={() => { navigate('/repos'); setIsMobileMenuOpen(false); }} />
               <MobileNavLink label="Index" icon={<Cpu size={20} />} onClick={() => handleNavClick('index-input', '/')} />
               <MobileNavLink label="Explore" icon={<LayoutGrid size={20} />} onClick={() => handleNavClick('search-input', '/?history=true')} />
               <div className="h-px bg-white/10 my-2" />

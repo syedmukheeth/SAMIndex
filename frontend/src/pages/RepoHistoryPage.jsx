@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { getIndexedRepos } from '../services/api';
 import Skeleton from '../components/ui/Skeleton';
 
-const WorkspacesPage = () => {
+const RepoHistoryPage = () => {
   const [repos, setRepos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -24,7 +24,7 @@ const WorkspacesPage = () => {
           .sort((a, b) => new Date(b.lastIndexedAt) - new Date(a.lastIndexedAt));
         setRepos(indexedOnly);
       } catch (err) {
-        console.error('Failed to fetch workspaces:', err);
+        console.error('Failed to fetch repos:', err);
       } finally {
         setLoading(false);
       }
@@ -62,10 +62,10 @@ const WorkspacesPage = () => {
                 <div className="p-2.5 rounded-2xl bg-accent-blue/10 border border-accent-blue/20 text-accent-blue">
                   <Database size={24} />
                 </div>
-                <h1 className="text-4xl md:text-5xl font-black tracking-tight">MongoDB Brain</h1>
+                <h1 className="text-4xl md:text-5xl font-black tracking-tight">Repo History</h1>
               </div>
               <p className="text-white/30 text-lg max-w-2xl font-medium">
-                The neural core containing all indexed codebases. Currently managing <span className="text-accent-blue font-black">{repos.length} established links</span>.
+                Your personal neural core containing all indexed codebases. Currently managing <span className="text-accent-blue font-black">{repos.length} established links</span>.
               </p>
             </div>
           </div>
@@ -88,7 +88,7 @@ const WorkspacesPage = () => {
           <Search size={20} className="text-white/20 group-focus-within:text-accent-blue transition-colors" />
           <input 
             type="text" 
-            placeholder="Search within the neural brain..." 
+            placeholder="Search within your repo history..." 
             className="bg-transparent border-none outline-none flex-1 px-4 text-white font-medium placeholder-white/10"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -185,7 +185,7 @@ const WorkspacesPage = () => {
                         whileHover={{ x: 5 }}
                         className="text-accent-blue text-[10px] font-black uppercase tracking-widest flex items-center gap-2"
                        >
-                         Enter Workspace
+                         Enter Repo
                          <ArrowLeft size={12} className="rotate-180" />
                        </motion.div>
                     </div>
@@ -197,28 +197,28 @@ const WorkspacesPage = () => {
                 <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-8">
                   <Database size={32} className="text-white/20" />
                 </div>
-                <h3 className="text-2xl font-black mb-3">Neural Brain Empty</h3>
+                <h3 className="text-2xl font-black mb-3">No Repos Found</h3>
                 <p className="text-white/30 max-w-xs mx-auto text-sm leading-relaxed mb-8">
                   No repositories matching "{searchQuery}" have been neural-linked yet.
                 </p>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={async () => {
-                    try {
-                      setLoading(true);
-                      await import('../services/api').then(m => m.claimOrphans());
-                      window.location.reload();
-                    } catch (err) {
-                      console.error('Migration failed:', err);
-                    } finally {
-                      setLoading(false);
-                    }
-                  }}
-                  className="px-8 py-3 rounded-2xl bg-accent-blue/10 border border-accent-blue/30 text-accent-blue text-xs font-black uppercase tracking-widest hover:bg-accent-blue hover:text-white transition-all shadow-[0_0_20px_rgba(59,130,246,0.1)]"
-                >
-                  Restore My Workspaces
-                </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={async () => {
+                      try {
+                        setLoading(true);
+                        await import('../services/api').then(m => m.claimOrphans());
+                        window.location.reload();
+                      } catch (err) {
+                        console.error('Migration failed:', err);
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    className="px-8 py-3 rounded-2xl bg-accent-blue/10 border border-accent-blue/30 text-accent-blue text-xs font-black uppercase tracking-widest hover:bg-accent-blue hover:text-white transition-all shadow-[0_0_20px_rgba(59,130,246,0.1)]"
+                  >
+                    Restore My Repos
+                  </motion.button>
               </div>
             )}
           </AnimatePresence>
@@ -228,4 +228,4 @@ const WorkspacesPage = () => {
   );
 };
 
-export default WorkspacesPage;
+export default RepoHistoryPage;
