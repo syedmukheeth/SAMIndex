@@ -73,8 +73,8 @@ const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
     <div key={repoName} className="space-y-3">
       <div className="flex items-center justify-between px-2">
         <div className="flex items-center gap-2">
-          {isEphemeral ? <Zap size={14} className="text-accent-cyan" /> : <Code size={14} className="text-accent-blue" />}
-          <h3 className={`text-[10px] font-black uppercase tracking-[0.2em] ${isEphemeral ? 'text-accent-cyan/60' : 'text-accent-blue/60'}`}>
+          {isEphemeral ? <Zap size={14} className="text-accent-cyan shadow-[0_0_10px_rgba(80,227,194,0.4)]" /> : <Code size={14} className="text-accent-blue" />}
+          <h3 className={`text-[10px] font-black uppercase tracking-[0.2em] ${isEphemeral ? 'text-accent-cyan' : 'text-accent-blue/60'}`}>
             {repoName}
           </h3>
         </div>
@@ -88,20 +88,35 @@ const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
         {items.map((item) => (
           <motion.button
             key={item.id || item._id}
-            whileHover={{ scale: 1.01, backgroundColor: 'rgba(255,255,255,0.03)' }}
+            whileHover={{ scale: 1.01, backgroundColor: isEphemeral ? 'rgba(80, 227, 194, 0.05)' : 'rgba(0, 112, 243, 0.05)' }}
             whileTap={{ scale: 0.99 }}
             onClick={() => {
               onSelectSearch(item);
               onClose();
             }}
-            className={`w-full p-4 rounded-2xl border border-white/5 bg-white/[0.02] flex items-start gap-4 text-left group transition-all hover:border-${isEphemeral ? 'accent-cyan' : 'accent-blue'}/20`}
+            className={`w-full p-4 rounded-2xl border flex items-start gap-4 text-left group transition-all ${
+              isEphemeral 
+                ? 'border-accent-cyan/10 bg-accent-cyan/[0.02] hover:border-accent-cyan/30' 
+                : 'border-white/5 bg-white/[0.02] hover:border-accent-blue/30'
+            }`}
           >
-            <div className={`p-2 rounded-xl transition-colors ${isEphemeral ? 'bg-accent-cyan/10 text-accent-cyan group-hover:bg-accent-cyan/20' : 'bg-accent-blue/10 text-accent-blue group-hover:bg-accent-blue/20'}`}>
+            <div className={`p-2 rounded-xl transition-colors ${
+              isEphemeral 
+                ? 'bg-accent-cyan/10 text-accent-cyan group-hover:bg-accent-cyan/20' 
+                : 'bg-accent-blue/10 text-accent-blue group-hover:bg-accent-blue/20'
+            }`}>
               <Search size={16} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white font-bold text-sm truncate">{item.query}</p>
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <p className="text-white font-bold text-sm truncate">{item.query}</p>
+                {isEphemeral && (
+                  <span className="shrink-0 text-[7px] font-black bg-accent-cyan/20 text-accent-cyan px-1.5 py-0.5 rounded uppercase tracking-tighter border border-accent-cyan/30">
+                    Neural Link
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
                 <Clock size={12} className="text-white/20" />
                 <span className="text-[10px] text-white/20 font-black uppercase tracking-tighter">
                   {new Date(item.timestamp).toLocaleDateString()} • {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

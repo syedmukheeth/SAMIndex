@@ -425,15 +425,15 @@ const CodeSearchPage = () => {
   const [repoGenome, setRepoGenome] = useState(null);
   const [isLoadingGenome, setIsLoadingGenome] = useState(false);
   
+  const [searchParams, setSearchParams] = useSearchParams();
+  
   // NEW: Ephemeral Mode State
-  const [searchMode, setSearchMode] = useState('persistent'); // 'persistent' | 'ephemeral'
-  const [ephemeralSessionId, setEphemeralSessionId] = useState(null);
+  const [searchMode, setSearchMode] = useState(searchParams.get('mode') || 'persistent'); // 'persistent' | 'ephemeral'
+  const [ephemeralSessionId, setEphemeralSessionId] = useState(searchParams.get('sid') || null);
   const [isSearchUnlocked, setIsSearchUnlocked] = useState(false);
   
   const searchInputRef = React.useRef(null);
-
   const debouncedQuery = useDebounce(query, 500);
-  const [searchParams, setSearchParams] = useSearchParams();
 
   // NEW: Instant Workspace Previewing (Senior Dev UX)
   const previewRepo = useMemo(() => {
@@ -638,7 +638,7 @@ const CodeSearchPage = () => {
             id: Math.random().toString(36).substr(2, 9),
             owner: target?.owner,
             repo: target?.repo,
-            isEphemeral: !!ephemeralSessionId
+            isEphemeral: !!ephemeralSessionId || searchMode === 'ephemeral'
           };
           const updatedHistory = [
             newEntry,
