@@ -638,7 +638,7 @@ const CodeSearchPage = () => {
             id: Math.random().toString(36).substr(2, 9),
             owner: target?.owner,
             repo: target?.repo,
-            isEphemeral: !!ephemeralSessionId || searchMode === 'ephemeral'
+            isEphemeral: searchMode === 'ephemeral'
           };
           const updatedHistory = [
             newEntry,
