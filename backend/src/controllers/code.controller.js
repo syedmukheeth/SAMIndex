@@ -212,11 +212,13 @@ exports.searchCode = catchAsync(async (req, res, next) => {
 
   // If searching in a specific repo (Workspace Mode)
   if (repo) {
-    searchQuery.repo = { $regex: new RegExp(`^${repo}$`, 'i') };
+    searchQuery.repo = repo.toLowerCase();
     if (req.query.owner) {
-      searchQuery.owner = { $regex: new RegExp(`^${req.query.owner}$`, 'i') };
+      searchQuery.owner = req.query.owner.toLowerCase();
     }
   }
+
+  console.log(`[CodeSearch] Query for ${req.query.owner}/${repo}:`, JSON.stringify(searchQuery));
 
   // 2. Run Search and Count in Parallel
   const [results, totalResults] = await Promise.all([
