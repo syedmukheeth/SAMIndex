@@ -18,16 +18,31 @@ const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
     try {
       const response = await getHistory();
       if (response.status === 'success') {
-        setHistory(response.data);
+        const data = migrateHistory(response.data);
+        setHistory(data);
       }
     } catch (err) {
       console.error('Failed to load remote history:', err);
       // Fallback to local if API fails
       const saved = localStorage.getItem('search_history');
-      if (saved) setHistory(JSON.parse(saved));
+      if (saved) setHistory(migrateHistory(JSON.parse(saved)));
     } finally {
       setLoading(false);
     }
+  };
+
+  // Retroactively tag old history entries that were done in Direct mode
+  // by cross-referencing against direct_repo_history in localStorage
+  const migrateHistory = (items) => {
+    const directRepos = JSON.parse(localStorage.getItem('direct_repo_history') || '[]');
+    const directRepoKeys = new Set(
+      directRepos.map(r => `${r.owner}/${r.name}`.toLowerCase())
+    );
+    return items.map(item => {
+      if (item.isEphemeral !== undefined) return item; // already tagged
+      const key = item.owner && item.repo ? `${item.owner}/${item.repo}`.toLowerCase() : '';
+      return { ...item, isEphemeral: directRepoKeys.has(key) };
+    });
   };
 
   const handleClearHistory = async () => {
@@ -231,10 +246,10 @@ const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
                             const isDirect = directIds.has(item.id);
                             const isGlobal = globalIds.has(item.id);
                             const colorClass = isDirect
-                              ? 'bg-accent-cyan/10 text-accent-cyan group-hover:bg-accent-cyan/20 border-accent-cyan/10'
+                              ? 'bg-[#00f2ff]/10 text-[#00f2ff] group-hover:bg-[#00f2ff]/20'
                               : isGlobal
-                              ? 'bg-accent-purple/10 text-accent-purple group-hover:bg-accent-purple/20 border-accent-purple/10'
-                              : 'bg-accent-blue/10 text-accent-blue group-hover:bg-accent-blue/20 border-accent-blue/10';
+                              ? 'bg-accent-purple/10 text-accent-purple group-hover:bg-accent-purple/20'
+                              : 'bg-accent-blue/10 text-accent-blue group-hover:bg-accent-blue/20';
                             return (
                               <button
                                 key={`recent-${item.id}`}
@@ -265,7 +280,6 @@ const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
                             );
                           })}
                        </div>
-                       <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent mt-8" />
                     </div>
                   )}
 
