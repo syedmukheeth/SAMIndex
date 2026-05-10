@@ -1473,7 +1473,7 @@ const CodeSearchPage = () => {
             </div>
             <div className="relative z-10">
               <p className="text-[10px] font-black tracking-[0.2em] uppercase text-white/30 mb-1">
-                Sole Developer
+                Developed By
               </p>
               <p className="text-sm font-black tracking-tight text-white group-hover:text-accent-blue transition-colors">
                 Syed Mukheeth
