@@ -24,6 +24,18 @@ const processIndexing = async (data, job = null) => {
   console.log(`[IndexingService] Starting indexing for ${owner}/${repo} (ID: ${id})`);
   
   try {
+    // 0. Verify GitHub Token Health
+    try {
+      const rateLimit = await githubService.getRateLimit();
+      console.log(`[IndexingService] Token Health: ${rateLimit.remaining}/${rateLimit.limit} remaining`);
+      if (rateLimit.remaining < 10) {
+        throw new Error('GitHub API rate limit too low or token invalid.');
+      }
+    } catch (e) {
+      console.error('[IndexingService] Token check failed:', e.message);
+      throw new Error(`GitHub Authentication failed: ${e.message}`);
+    }
+
     // 1. Update Progress
     if (job) {
       await job.updateProgress(10);
@@ -55,12 +67,13 @@ const processIndexing = async (data, job = null) => {
         
         if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
         
-        // Use a more robust extraction command for Linux/macOS/Windows
-        const tarCmd = process.platform === 'win32' 
+        // Linux/Render uses unzip for .zip files; Windows uses tar
+        const extractCmd = process.platform === 'win32' 
           ? `tar -xf "${zipPath}" -C "${tempDir}" --strip-components=1`
-          : `tar -xf "${zipPath}" -C "${tempDir}" --strip-components=1`;
+          : `unzip -q "${zipPath}" -d "${tempDir}" && mv "${tempDir}"/*/* "${tempDir}"/ 2>/dev/null || true`;
           
-        await execAsync(tarCmd);
+        console.log(`[TurboIndexer] Running extraction: ${extractCmd}`);
+        await execAsync(extractCmd);
         
         console.log(`[TurboIndexer] Scanning extracted files...`);
         const files = [];
@@ -175,16 +188,16 @@ const processIndexing = async (data, job = null) => {
     if (filePaths.length === 0) {
       console.error(`[IndexingService] CRITICAL: No indexable files found for ${owner}/${repo}.`);
       
-      // Still update metadata so the UI knows we scanned it
+      // Do NOT mark as indexed if truly empty, to allow retries
       await Repository.findOneAndUpdate(
         { 
           owner: { $regex: new RegExp(`^${owner}$`, 'i') }, 
           name: { $regex: new RegExp(`^${repo}$`, 'i') } 
         },
-        { isIndexed: true, lastIndexedAt: new Date() }
+        { isIndexed: false, lastIndexedAt: new Date() }
       );
       
-      throw new Error(`Repository "${repo}" appears empty or contains no supported code files.`);
+      throw new Error(`Repository "${repo}" appears empty or contains no supported code files. Check your GITHUB_TOKEN permissions.`);
     }
 
     const CONCURRENCY_LIMIT = 15; // Increased for performance
