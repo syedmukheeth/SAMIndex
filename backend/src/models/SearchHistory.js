@@ -25,6 +25,11 @@ const searchHistorySchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
     index: true // Fast temporal sorting
+  },
+  isEphemeral: {
+    type: Boolean,
+    default: false,
+    index: true
   }
 }, {
   timestamps: true

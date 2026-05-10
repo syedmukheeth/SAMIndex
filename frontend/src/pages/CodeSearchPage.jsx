@@ -631,15 +631,19 @@ const CodeSearchPage = () => {
         // Save to local history
         try {
           const savedHistory = JSON.parse(localStorage.getItem('search_history') || '[]');
+          const target = activeRepo || previewRepo;
           const newEntry = { 
             query: debouncedQuery, 
             timestamp: new Date().toISOString(),
-            id: Math.random().toString(36).substr(2, 9)
+            id: Math.random().toString(36).substr(2, 9),
+            owner: target?.owner,
+            repo: target?.repo,
+            isEphemeral: !!ephemeralSessionId
           };
           const updatedHistory = [
             newEntry,
             ...savedHistory.filter(h => h.query !== debouncedQuery)
-          ].slice(0, 15); // Keep last 15 searches
+          ].slice(0, 30); // Expanded to 30 for better historical depth
           localStorage.setItem('search_history', JSON.stringify(updatedHistory));
         } catch (hErr) {
           console.error('Failed to save search history:', hErr);
@@ -672,12 +676,14 @@ const CodeSearchPage = () => {
           query, 
           timestamp: new Date().toISOString(),
           id: Math.random().toString(36).substr(2, 9),
-          repo: activeRepo ? `${activeRepo.owner}/${activeRepo.repo}` : 'Global'
+          owner: activeRepo?.owner,
+          repo: activeRepo?.repo,
+          isEphemeral: !!ephemeralSessionId
         };
         const updatedHistory = [
           newEntry,
           ...savedHistory.filter(h => h.query !== query)
-        ].slice(0, 15);
+        ].slice(0, 30);
         localStorage.setItem('search_history', JSON.stringify(updatedHistory));
       }
     };
@@ -1445,12 +1451,21 @@ const CodeSearchPage = () => {
       <HistoryPanel 
         isOpen={isHistoryOpen} 
         onClose={() => setIsHistoryOpen(false)}
-        onSelectSearch={(q, repoPath) => {
-          setQuery(q);
-          if (repoPath && repoPath !== 'Global') {
-            const [owner, repoName] = repoPath.split('/');
-            setActiveRepo({ owner, repo: repoName, isIndexed: true });
-            setSearchParams({ owner, repo: repoName });
+        onSelectSearch={(item) => {
+          setQuery(item.query);
+          if (item.repo && item.owner) {
+            setActiveRepo({ 
+              owner: item.owner, 
+              repo: item.repo, 
+              isIndexed: true,
+              isEphemeral: item.isEphemeral
+            });
+            setSearchParams({ 
+              owner: item.owner, 
+              repo: item.repo,
+              mode: item.isEphemeral ? 'ephemeral' : 'persistent',
+              sid: item.isEphemeral ? `${item.owner.toLowerCase()}:${item.repo.toLowerCase()}` : undefined
+            });
           } else {
             setActiveRepo(null);
             setSearchParams({});

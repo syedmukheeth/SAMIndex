@@ -345,7 +345,8 @@ exports.searchCode = catchAsync(async (req, res, next) => {
         query: trimmedQuery 
       },
       { 
-        timestamp: new Date() 
+        timestamp: new Date(),
+        isEphemeral: !!req.query.sessionId // If sessionId is present, it's ephemeral
       },
       { 
         upsert: true, 
