@@ -311,94 +311,6 @@ const IndexingModal = ({ status, progress, repo, isOpen, mode, onComplete }) => 
   );
 };
 
-const IntelligencePanel = ({ genome, isLoading }) => {
-  if (!genome && !isLoading) return null;
-
-  const metrics = [
-    { label: 'Scalability', ...genome?.scalability, color: 'text-accent-blue', bg: 'bg-accent-blue/10' },
-    { label: 'Security', ...genome?.security, color: 'text-red-400', bg: 'bg-red-500/10' },
-    { label: 'Observability', ...genome?.observability, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-    { label: 'Infra Maturity', ...genome?.infra_maturity, color: 'text-accent-purple', bg: 'bg-accent-purple/10' },
-    { label: 'Realtime', ...genome?.realtime_readiness, color: 'text-accent-cyan', bg: 'bg-accent-cyan/10' }
-  ];
-
-  return (
-    <motion.div 
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      className="glass-dark rounded-[2.5rem] border border-white/5 p-8 h-fit sticky top-32 overflow-hidden"
-    >
-      <div className="absolute top-0 right-0 p-4 opacity-10">
-        <Cpu size={120} className="text-accent-blue" />
-      </div>
-
-      <div className="relative z-10">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="p-2.5 rounded-xl bg-accent-blue/10 text-accent-blue border border-accent-blue/20">
-            <Sparkles size={20} className="animate-pulse" />
-          </div>
-          <div>
-            <h3 className="text-xl font-black tracking-tight">Repository Genome</h3>
-            <p className="text-[10px] font-black uppercase tracking-widest text-white/30">AI Architecture Intelligence</p>
-          </div>
-        </div>
-
-        <div className="mb-8 space-y-4">
-          <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 italic text-sm text-white/60 leading-relaxed">
-            "{genome?.architecture || 'Synthesizing architectural signals...'}"
-          </div>
-          
-          <div className="flex items-center justify-between px-2">
-            <span className="text-[10px] font-black uppercase tracking-widest text-white/20">Analysis Confidence</span>
-            <span className="text-[10px] font-black text-accent-blue">{(genome?.confidence || 0) * 100}%</span>
-          </div>
-          <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-             <motion.div 
-              initial={{ width: 0 }}
-              animate={{ width: `${(genome?.confidence || 0) * 100}%` }}
-              className="h-full bg-accent-blue shadow-[0_0_10px_rgba(0,112,243,0.5)]"
-             />
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          {metrics.map((m, i) => (
-            <div key={i} className="group">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-black uppercase tracking-widest text-white/40 group-hover:text-white transition-colors">{m.label}</span>
-                <span className={`text-xs font-black ${m.color}`}>{m.score || 0}%</span>
-              </div>
-              <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden mb-3">
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${m.score || 0}%` }}
-                  className={`h-full ${m.color.replace('text', 'bg')} shadow-lg`}
-                />
-              </div>
-              <p className="text-[10px] text-white/30 leading-relaxed font-medium group-hover:text-white/50 transition-colors">
-                {m.reasoning || 'Calibrating neural nodes...'}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {genome?.key_files && (
-          <div className="mt-8 pt-8 border-t border-white/5">
-            <span className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-4 block">Influential Signals</span>
-            <div className="space-y-2">
-              {genome.key_files.map((file, i) => (
-                <div key={i} className="flex items-center gap-2 text-[10px] font-mono text-white/40 hover:text-accent-blue cursor-pointer transition-colors">
-                  <FileCode size={12} />
-                  <span className="truncate">{file}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </motion.div>
-  );
-};
 
 // --- Main Component ---
 
@@ -1329,19 +1241,7 @@ const CodeSearchPage = () => {
           </motion.div>
 
           
-          {/* Intelligence Panel Triggered for Active Repo */}
-          {activeRepo && (
-             <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-20 grid grid-cols-1 lg:grid-cols-3 gap-12"
-             >
-                <div className="lg:col-span-2 space-y-12">
-                   {/* This was where the search bar section ended */}
-                </div>
-                <IntelligencePanel genome={repoGenome} isLoading={isLoadingGenome} />
-             </motion.div>
-          )}
+
         </section>
 
         <AnimatePresence mode="wait">
