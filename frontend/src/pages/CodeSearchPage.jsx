@@ -1184,14 +1184,25 @@ const CodeSearchPage = () => {
               >
                 <div className="flex items-center justify-between px-2">
                   <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white/30 flex items-center gap-2">
-                    <Cpu size={14} className="text-accent-blue" />
-                    Your Recently Indexed Repos
+                    {searchMode === 'ephemeral' ? (
+                      <>
+                        <Zap size={14} className="text-accent-cyan shadow-[0_0_10px_rgba(80,227,194,0.4)]" />
+                        Recently Active Neural Sessions
+                      </>
+                    ) : (
+                      <>
+                        <Database size={14} className="text-accent-blue" />
+                        Your Indexed Knowledge Vault
+                      </>
+                    )}
                   </h3>
                   <Link 
                     to="/repos" 
-                    className="text-[10px] font-black uppercase tracking-widest text-accent-blue hover:text-white transition-colors flex items-center gap-2 group"
+                    className={`text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-2 group ${
+                      searchMode === 'ephemeral' ? 'text-accent-cyan' : 'text-accent-blue'
+                    }`}
                   >
-                    View Your Repo History
+                    View Full History
                     <ArrowLeft size={12} className="rotate-180 group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </div>
@@ -1201,43 +1212,83 @@ const CodeSearchPage = () => {
                       {[1, 2, 3].map(i => <div key={i} className="h-24 glass-dark rounded-3xl border border-white/5 animate-pulse" />)}
                     </div>
                   ) : (
-                    <>
-                      {/* Section 1: Neural Stream (Direct) */}
-                      {directRepos.length > 0 && (
-                        <div className="space-y-6">
-                          <div className="flex items-center gap-3 px-2">
-                             <div className="p-1.5 rounded-lg bg-accent-cyan/10 text-accent-cyan">
-                               <Zap size={14} className="animate-pulse" />
-                             </div>
-                             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-accent-cyan">Direct Search</h4>
+                    <>                      {searchMode === 'ephemeral' ? (
+                        /* Section 1: Neural Stream (Direct) */
+                        directRepos.length > 0 ? (
+                          <div className="space-y-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {directRepos.map(repo => (
+                                <motion.button
+                                  key={`dir-${repo.owner}-${repo.name}`}
+                                  whileHover={{ scale: 1.02, borderColor: 'rgba(0,242,255,0.3)' }}
+                                  whileTap={{ scale: 0.98 }}
+                                  onClick={() => {
+                                    setSearchMode('ephemeral');
+                                    setRepoUrl(`${repo.owner}/${repo.name}`);
+                                    handleIndexRepo();
+                                  }}
+                                  className="flex items-center gap-4 p-4 glass-dark rounded-3xl border border-white/5 text-left group transition-all relative overflow-hidden"
+                                >
+                                  <div className="absolute inset-0 bg-accent-cyan/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                  <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-accent-cyan/10 text-accent-cyan group-hover:bg-accent-cyan/20 transition-colors">
+                                    <Zap size={18} />
+                                  </div>
+                                  <div className="flex-1 min-w-0 relative z-10">
+                                    <p className="text-sm font-bold truncate">{repo.name}</p>
+                                    <p className="text-[10px] text-white/30 truncate">{repo.owner}</p>
+                                  </div>
+                                  <div className="w-1.5 h-1.5 rounded-full bg-accent-cyan shadow-[0_0_10px_rgba(0,242,255,0.5)]"></div>
+                                </motion.button>
+                              ))}
+                            </div>
                           </div>
+                        ) : (
+                          <div className="col-span-full py-12 text-center glass-dark rounded-[2.5rem] border border-white/5 border-dashed">
+                            <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                              <Zap size={20} className="text-white/20" />
+                            </div>
+                            <p className="text-white/40 text-xs font-black uppercase tracking-widest">No Active Neural Sessions</p>
+                          </div>
+                        )
+                      ) : (
+                        /* Section 2: Knowledge Vault (Permanent) */
+                        indexedRepos.length > 0 ? (
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {directRepos.map(repo => (
+                            {indexedRepos.map(repo => (
                               <motion.button
-                                key={`dir-${repo.owner}-${repo.name}`}
-                                whileHover={{ scale: 1.02, borderColor: 'rgba(0,242,255,0.3)' }}
+                                key={repo.githubId}
+                                whileHover={{ scale: 1.02, borderColor: 'rgba(47,129,247,0.3)' }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => {
-                                  setSearchMode('ephemeral');
-                                  setRepoUrl(`${repo.owner}/${repo.name}`);
-                                  handleIndexRepo();
+                                  setSearchMode('persistent');
+                                  setActiveRepo({ owner: repo.owner, repo: repo.name, isIndexed: true });
+                                  setSearchParams({ owner: repo.owner, repo: repo.name });
+                                  searchInputRef.current?.focus();
                                 }}
                                 className="flex items-center gap-4 p-4 glass-dark rounded-3xl border border-white/5 text-left group transition-all relative overflow-hidden"
                               >
-                                <div className="absolute inset-0 bg-accent-cyan/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-accent-cyan/10 text-accent-cyan group-hover:bg-accent-cyan/20 transition-colors">
-                                  <Zap size={18} />
+                                <div className="absolute inset-0 bg-accent-blue/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-accent-blue/10 text-accent-blue group-hover:bg-accent-blue/20 transition-colors">
+                                  <Database size={18} />
                                 </div>
                                 <div className="flex-1 min-w-0 relative z-10">
                                   <p className="text-sm font-bold truncate">{repo.name}</p>
                                   <p className="text-[10px] text-white/30 truncate">{repo.owner}</p>
                                 </div>
-                                <div className="w-1.5 h-1.5 rounded-full bg-accent-cyan shadow-[0_0_10px_rgba(0,242,255,0.5)]"></div>
+                                <div className="w-1.5 h-1.5 rounded-full bg-accent-blue shadow-[0_0_10px_rgba(47,129,247,0.5)]"></div>
                               </motion.button>
                             ))}
                           </div>
-                        </div>
+                        ) : (
+                          <div className="col-span-full py-12 text-center glass-dark rounded-[2.5rem] border border-white/5 border-dashed">
+                            <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                              <Database size={20} className="text-white/20" />
+                            </div>
+                            <p className="text-white/40 text-xs font-black uppercase tracking-widest">Knowledge Vault Empty</p>
+                          </div>
+                        )
                       )}
+
 
                       {directRepos.length === 0 && indexedRepos.length === 0 && (
                         <div className="col-span-full py-12 text-center glass-dark rounded-[2.5rem] border border-white/5 border-dashed">
