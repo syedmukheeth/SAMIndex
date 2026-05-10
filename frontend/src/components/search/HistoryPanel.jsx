@@ -228,37 +228,19 @@ const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
                 </div>
               ) : (
                 <div className="space-y-12">
-
-
-                  {/* Neural Stream (Direct Search) */}
-                  {Object.keys(direct).length > 0 && (
+                  {/* Unified Chronological Stream */}
+                  {Object.keys(groupByRepo(history)).length > 0 && (
                     <div className="space-y-6">
                        <div className="space-y-6">
-                          {Object.entries(direct)
+                          {Object.entries(groupByRepo(history))
                             .sort(([, a], [, b]) => new Date(b[0].timestamp) - new Date(a[0].timestamp))
-                            .map(([repoName, items]) => renderHistoryGroup(repoName, items, 'direct'))}
-                       </div>
-                    </div>
-                  )}
-
-                  {/* Global Search (Purple) */}
-                  {Object.keys(global).length > 0 && (
-                    <div className="space-y-6">
-                       <div className="space-y-6">
-                          {Object.entries(global)
-                            .sort(([, a], [, b]) => new Date(b[0].timestamp) - new Date(a[0].timestamp))
-                            .map(([repoName, items]) => renderHistoryGroup(repoName, items, 'global'))}
-                       </div>
-                    </div>
-                  )}
-
-                  {/* Knowledge Vault (Permanent Search) */}
-                  {Object.keys(permanent).length > 0 && (
-                    <div className="space-y-6">
-                       <div className="space-y-6">
-                          {Object.entries(permanent)
-                            .sort(([, a], [, b]) => new Date(b[0].timestamp) - new Date(a[0].timestamp))
-                            .map(([repoName, items]) => renderHistoryGroup(repoName, items, 'permanent'))}
+                            .map(([repoName, items]) => {
+                               const firstItem = items[0];
+                               let type = 'permanent';
+                               if (firstItem.isEphemeral) type = 'direct';
+                               else if (firstItem.repo === 'Global' || !firstItem.repo || firstItem.repo.toLowerCase() === 'global') type = 'global';
+                               return renderHistoryGroup(repoName, items, type);
+                            })}
                        </div>
                     </div>
                   )}
