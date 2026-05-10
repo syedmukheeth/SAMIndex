@@ -228,56 +228,7 @@ const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
                 </div>
               ) : (
                 <div className="space-y-12">
-                  {/* Recent Search (Unified Stream) */}
-                  {recent.length > 0 && (
-                    <div className="space-y-4">
-                       <div className="flex items-center gap-3 px-2">
-                          <div className="p-1.5 rounded-lg bg-white/5 text-white/40">
-                             <Clock size={14} />
-                           </div>
-                           <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20">Recent Search</h4>
-                       </div>
-                       <div className="grid gap-2">
-                          {recent.map((item) => {
-                            const isDirect = directIds.has(item.id);
-                            const isGlobal = globalIds.has(item.id);
-                            const colorClass = isDirect
-                              ? 'bg-accent-cyan/10 text-accent-cyan group-hover:bg-accent-cyan/20'
-                              : isGlobal
-                              ? 'bg-accent-purple/10 text-accent-purple group-hover:bg-accent-purple/20'
-                              : 'bg-accent-blue/10 text-accent-blue group-hover:bg-accent-blue/20';
-                            return (
-                              <button
-                                key={`recent-${item.id}`}
-                                onClick={() => onSelectSearch(item)}
-                                className={`group w-full p-4 glass-dark rounded-2xl border transition-all text-left flex items-center justify-between ${
-                                  isDirect ? 'border-accent-cyan/10 hover:border-accent-cyan/20' :
-                                  isGlobal ? 'border-accent-purple/10 hover:border-accent-purple/20' :
-                                  'border-white/5 hover:border-accent-blue/20'
-                                }`}
-                              >
-                                <div className="flex items-center gap-4 min-w-0">
-                                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${colorClass}`}>
-                                    <Search size={14} />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <p className="text-sm font-bold truncate group-hover:text-white transition-colors">
-                                      {item.query}
-                                    </p>
-                                    <p className="text-[10px] text-white/20 font-medium">
-                                      {item.repo && item.owner ? `${item.owner}/${item.repo}` : 'Global'}
-                                    </p>
-                                  </div>
-                                </div>
-                                <span className="text-[9px] text-white/10 font-medium group-hover:text-white/30 transition-colors">
-                                  {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                              </button>
-                            );
-                          })}
-                       </div>
-                    </div>
-                  )}
+
 
                   {/* Neural Stream (Direct Search) */}
                   {Object.keys(direct).length > 0 && (
