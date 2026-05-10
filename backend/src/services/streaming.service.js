@@ -39,10 +39,13 @@ class StreamingIngestionService {
       await ephemeralService.createSession(owner, repo);
     }
 
+    const pendingTasks = [];
+    let isSearchUnlockedEmitted = false;
+
     return new Promise((resolve, reject) => {
       zipStream
         .pipe(unzipper.Parse())
-        .on('entry', async (entry) => {
+        .on('entry', (entry) => {
           const fileName = entry.path;
           const type = entry.type; // 'Directory' or 'File'
 
@@ -62,64 +65,69 @@ class StreamingIngestionService {
             return;
           }
 
-          // 3. Process File Content
-          try {
-            const contentBuffer = await entry.buffer();
-            const content = contentBuffer.toString('utf-8');
-            totalBytes += contentBuffer.length;
-            
-            // Clean up entry path (GitHub ZIPs usually start with a random root dir)
-            const cleanPath = parts.slice(1).join('/');
+          // 3. Process File Content (NON-BLOCKING PARALLEL TASK)
+          const task = (async () => {
+            try {
+              const contentBuffer = await entry.buffer();
+              const content = contentBuffer.toString('utf-8');
+              totalBytes += contentBuffer.length;
+              
+              const cleanPath = parts.slice(1).join('/');
 
-            // 4. Intelligence Sniffer (NEW: Progressive AI)
-            const intelligenceService = require('./intelligence.service');
-            const signals = intelligenceService.extractSignals(cleanPath, content);
-            if (signals.length > 0) {
-              await intelligenceService.processSignals(owner, repo, signals);
-            }
+              // 4. Intelligence Sniffer (Backgrounded for Ephemeral)
+              const intelligenceService = require('./intelligence.service');
+              const signals = intelligenceService.extractSignals(cleanPath, content);
+              if (signals.length > 0) {
+                // Don't await for ephemeral to keep speed maxed
+                intelligenceService.processSignals(owner, repo, signals).catch(() => {});
+              }
 
-            // 5. Persistence Sink (Dual-Mode)
-            if (isEphemeral) {
-              await ephemeralService.indexFile(`${owner.toLowerCase()}:${repo.toLowerCase()}`, {
-                path: cleanPath,
-                content,
-                lang: ext.substring(1) || 'text'
-              });
-            } else {
-              await CodeFile.findOneAndUpdate(
-                { owner: owner.toLowerCase(), repo: repo.toLowerCase(), path: cleanPath },
-                {
+              // 5. Persistence Sink (Parallel)
+              if (isEphemeral) {
+                await ephemeralService.indexFile(`${owner.toLowerCase()}:${repo.toLowerCase()}`, {
+                  path: cleanPath,
                   content,
-                  lang: ext.substring(1) || 'text',
-                  lastIndexedSession: id,
-                  updatedAt: new Date()
-                },
-                { upsert: true }
-              );
+                  lang: ext.substring(1) || 'text'
+                });
+              } else {
+                await CodeFile.findOneAndUpdate(
+                  { owner: owner.toLowerCase(), repo: repo.toLowerCase(), path: cleanPath },
+                  {
+                    content,
+                    lang: ext.substring(1) || 'text',
+                    lastIndexedSession: id,
+                    updatedAt: new Date()
+                  },
+                  { upsert: true }
+                );
+              }
+
+              filesProcessed++;
+
+              // 6. Progressive Feedback & Early Unlock
+              if (filesProcessed % 10 === 0 && job) {
+                const progress = Math.min(99, Math.floor((filesProcessed / 500) * 100));
+                job.updateProgress(progress);
+              }
+
+              // HYPER-FAST UNLOCK (Millisecond Feel)
+              if (isEphemeral && filesProcessed >= 5 && !isSearchUnlockedEmitted) {
+                 isSearchUnlockedEmitted = true;
+                 console.log(`[TurboIngestor] Direct Search Unlocked for ${repoId} at ${filesProcessed} files.`);
+              }
+
+            } catch (err) {
+              console.error(`[TurboIngestor] Failed to process ${fileName}:`, err.message);
+              entry.autodrain();
             }
+          })();
 
-            filesProcessed++;
-
-            // 6. Progressive Feedback
-            if (filesProcessed % 10 === 0) {
-               const progress = Math.min(99, Math.floor((filesProcessed / 500) * 100));
-               if (job) {
-                 job.updateProgress(progress);
-                 job.log(`${isEphemeral ? '[Ephemeral]' : '[Neural]'} Indexed ${filesProcessed} files...`);
-               }
-            }
-
-            // UNLOCK SEARCH EARLY
-            if (filesProcessed === 20) {
-               console.log(`[StreamingIngestor] Search Unlock Threshold reached for ${repoId}`);
-            }
-
-          } catch (err) {
-            console.error(`[StreamingIngestor] Failed to process ${fileName}:`, err.message);
-            entry.autodrain();
-          }
+          pendingTasks.push(task);
         })
         .on('finish', async () => {
+          // Wait for all parallel indexing tasks to finish
+          await Promise.all(pendingTasks);
+          
           const duration = (Date.now() - startTime) / 1000;
           console.log(`[StreamingIngestor] Completed ${repoId} in ${duration}s. Mode: ${isEphemeral ? 'EPHEMERAL' : 'PERSISTENT'}`);
           

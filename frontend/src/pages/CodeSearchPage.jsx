@@ -1240,8 +1240,7 @@ const CodeSearchPage = () => {
                           </div>
                         </div>
                       )}
-
-                      {directRepos.length === 0 && indexedRepos.length === 0 && (
+                      {directRepos.length === 0 && indexedRepos.length === 0 && (
                         <div className="col-span-full py-12 text-center glass-dark rounded-[2.5rem] border border-white/5 border-dashed">
                           <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
                             <Database size={20} className="text-white/20" />
@@ -1273,10 +1272,10 @@ const CodeSearchPage = () => {
                     </>
                   )}
                 </div>
- </div>
               </motion.div>
             )}
           </motion.div>
+
           
           {/* Intelligence Panel Triggered for Active Repo */}
           {activeRepo && (
