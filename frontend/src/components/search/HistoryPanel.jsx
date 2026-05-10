@@ -42,11 +42,14 @@ const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
 
   const categorizeHistory = () => {
     const direct = [];
+    const global = [];
     const permanent = [];
 
     history.forEach(item => {
       if (item.isEphemeral) {
         direct.push(item);
+      } else if (item.repo === 'Global' || !item.repo || item.repo.toLowerCase() === 'global') {
+        global.push(item);
       } else {
         permanent.push(item);
       }
@@ -54,7 +57,7 @@ const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
 
     const groupByRepo = (items) => {
       return items.reduce((groups, item) => {
-        const repoName = item.repo && item.owner ? `${item.owner}/${item.repo}` : (item.repo || 'Global');
+        const repoName = item.repo && item.owner && item.repo !== 'Global' ? `${item.owner}/${item.repo}` : (item.repo || 'Global');
         if (!groups[repoName]) groups[repoName] = [];
         groups[repoName].push(item);
         return groups;
@@ -63,71 +66,101 @@ const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
 
     return {
       direct: groupByRepo(direct),
+      global: groupByRepo(global),
       permanent: groupByRepo(permanent)
     };
   };
 
-  const { direct, permanent } = categorizeHistory();
+  const { direct, global, permanent } = categorizeHistory();
 
-  const renderHistoryGroup = (repoName, items, isEphemeral = false) => (
-    <div key={repoName} className="space-y-3">
-      <div className="flex items-center justify-between px-2">
-        <div className="flex items-center gap-2">
-          {isEphemeral ? <Zap size={14} className="text-accent-cyan shadow-[0_0_10px_rgba(80,227,194,0.4)]" /> : <Code size={14} className="text-accent-blue" />}
-          <h3 className={`text-[10px] font-black uppercase tracking-[0.2em] ${isEphemeral ? 'text-accent-cyan' : 'text-accent-blue/60'}`}>
-            {repoName}
-          </h3>
-        </div>
-        {isEphemeral && (
-          <span className="text-[8px] font-black bg-accent-cyan/10 text-accent-cyan px-2 py-0.5 rounded-full border border-accent-cyan/20">
-            DIRECT
-          </span>
-        )}
-      </div>
-      <div className="grid gap-2">
-        {items.map((item) => (
-          <motion.button
-            key={item.id || item._id}
-            whileHover={{ scale: 1.01, backgroundColor: isEphemeral ? 'rgba(80, 227, 194, 0.05)' : 'rgba(0, 112, 243, 0.05)' }}
-            whileTap={{ scale: 0.99 }}
-            onClick={() => {
-              onSelectSearch(item);
-              onClose();
-            }}
-            className={`w-full p-4 rounded-2xl border flex items-start gap-4 text-left group transition-all ${
-              isEphemeral 
-                ? 'border-accent-cyan/10 bg-accent-cyan/[0.02] hover:border-accent-cyan/30' 
-                : 'border-white/5 bg-white/[0.02] hover:border-accent-blue/30'
-            }`}
-          >
-            <div className={`p-2 rounded-xl transition-colors ${
-              isEphemeral 
-                ? 'bg-accent-cyan/10 text-accent-cyan group-hover:bg-accent-cyan/20' 
-                : 'bg-accent-blue/10 text-accent-blue group-hover:bg-accent-blue/20'
+  const renderHistoryGroup = (repoName, items, type = 'permanent') => {
+    const isEphemeral = type === 'direct';
+    const isGlobal = type === 'global';
+    
+    return (
+      <div key={repoName} className="space-y-3">
+        <div className="flex items-center justify-between px-2">
+          <div className="flex items-center gap-2">
+            {isEphemeral ? (
+              <Zap size={14} className="text-accent-cyan shadow-[0_0_10px_rgba(80,227,194,0.4)]" />
+            ) : isGlobal ? (
+              <Globe size={14} className="text-accent-purple shadow-[0_0_10px_rgba(121,40,202,0.4)]" />
+            ) : (
+              <Code size={14} className="text-accent-blue" />
+            )}
+            <h3 className={`text-[10px] font-black uppercase tracking-[0.2em] ${
+              isEphemeral ? 'text-accent-cyan' : isGlobal ? 'text-accent-purple' : 'text-accent-blue/60'
             }`}>
-              <Search size={16} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-2 mb-1">
-                <p className="text-white font-bold text-sm truncate">{item.query}</p>
-                {isEphemeral && (
-                  <span className="shrink-0 text-[7px] font-black bg-accent-cyan/20 text-accent-cyan px-1.5 py-0.5 rounded uppercase tracking-tighter border border-accent-cyan/30">
-                    Neural Link
+              {repoName}
+            </h3>
+          </div>
+          {isEphemeral && (
+            <span className="text-[8px] font-black bg-accent-cyan/10 text-accent-cyan px-2 py-0.5 rounded-full border border-accent-cyan/20">
+              DIRECT
+            </span>
+          )}
+          {isGlobal && (
+            <span className="text-[8px] font-black bg-accent-purple/10 text-accent-purple px-2 py-0.5 rounded-full border border-accent-purple/20">
+              GLOBAL
+            </span>
+          )}
+        </div>
+        <div className="grid gap-2">
+          {items.map((item) => (
+            <motion.button
+              key={item.id || item._id}
+              whileHover={{ 
+                scale: 1.01, 
+                backgroundColor: isEphemeral 
+                  ? 'rgba(80, 227, 194, 0.05)' 
+                  : isGlobal 
+                    ? 'rgba(121, 40, 202, 0.05)' 
+                    : 'rgba(0, 112, 243, 0.05)' 
+              }}
+              whileTap={{ scale: 0.99 }}
+              onClick={() => {
+                onSelectSearch(item);
+                onClose();
+              }}
+              className={`w-full p-4 rounded-2xl border flex items-start gap-4 text-left group transition-all ${
+                isEphemeral 
+                  ? 'border-accent-cyan/10 bg-accent-cyan/[0.02] hover:border-accent-cyan/30' 
+                  : isGlobal
+                    ? 'border-accent-purple/10 bg-accent-purple/[0.02] hover:border-accent-purple/30'
+                    : 'border-white/5 bg-white/[0.02] hover:border-accent-blue/30'
+              }`}
+            >
+              <div className={`p-2 rounded-xl transition-colors ${
+                isEphemeral 
+                  ? 'bg-accent-cyan/10 text-accent-cyan group-hover:bg-accent-cyan/20' 
+                  : isGlobal
+                    ? 'bg-accent-purple/10 text-accent-purple group-hover:bg-accent-purple/20'
+                    : 'bg-accent-blue/10 text-accent-blue group-hover:bg-accent-blue/20'
+              }`}>
+                <Search size={16} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <p className="text-white font-bold text-sm truncate">{item.query}</p>
+                  {isEphemeral && (
+                    <span className="shrink-0 text-[7px] font-black bg-accent-cyan/20 text-accent-cyan px-1.5 py-0.5 rounded uppercase tracking-tighter border border-accent-cyan/30">
+                      Neural Link
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock size={12} className="text-white/20" />
+                  <span className="text-[10px] text-white/20 font-black uppercase tracking-tighter">
+                    {new Date(item.timestamp).toLocaleDateString()} • {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
-                )}
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Clock size={12} className="text-white/20" />
-                <span className="text-[10px] text-white/20 font-black uppercase tracking-tighter">
-                  {new Date(item.timestamp).toLocaleDateString()} • {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
-              </div>
-            </div>
-          </motion.button>
-        ))}
+            </motion.button>
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <AnimatePresence>
@@ -187,7 +220,7 @@ const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
                 </div>
               ) : (
                 <div className="space-y-12">
-                  {/* Neural Stream (Direct) */}
+                  {/* Neural Stream (Direct Search) */}
                   {Object.keys(direct).length > 0 && (
                     <div className="space-y-6">
                        <div className="flex items-center gap-3 px-2">
@@ -197,12 +230,27 @@ const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
                           <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-accent-cyan">Direct Search</h4>
                        </div>
                        <div className="space-y-6">
-                          {Object.entries(direct).map(([repoName, items]) => renderHistoryGroup(repoName, items, true))}
+                          {Object.entries(direct).map(([repoName, items]) => renderHistoryGroup(repoName, items, 'direct'))}
                        </div>
                     </div>
                   )}
 
-                  {/* Knowledge Vault (Permanent) */}
+                  {/* Global Search (Purple) */}
+                  {Object.keys(global).length > 0 && (
+                    <div className="space-y-6">
+                       <div className="flex items-center gap-3 px-2">
+                          <div className="p-1.5 rounded-lg bg-accent-purple/10 text-accent-purple">
+                            <Globe size={14} />
+                          </div>
+                          <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-accent-purple">Global Search</h4>
+                       </div>
+                       <div className="space-y-6">
+                          {Object.entries(global).map(([repoName, items]) => renderHistoryGroup(repoName, items, 'global'))}
+                       </div>
+                    </div>
+                  )}
+
+                  {/* Knowledge Vault (Permanent Search) */}
                   {Object.keys(permanent).length > 0 && (
                     <div className="space-y-6">
                        <div className="flex items-center gap-3 px-2">
@@ -212,7 +260,7 @@ const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-accent-blue/40">Permanent Search</h4>
                        </div>
                        <div className="space-y-6">
-                          {Object.entries(permanent).map(([repoName, items]) => renderHistoryGroup(repoName, items, false))}
+                          {Object.entries(permanent).map(([repoName, items]) => renderHistoryGroup(repoName, items, 'permanent'))}
                        </div>
                     </div>
                   )}
