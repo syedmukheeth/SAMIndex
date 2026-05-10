@@ -819,18 +819,13 @@ const CodeSearchPage = () => {
         return;
       }
     }
-    setIsIndexing(true);
-    setIndexProgress(0);
-    setIndexStatus({ type: 'info', message: 'Initializing Neural Engine...' });
-
-    try {
       if (repoUrl.trim()) {
         // Robust URL Parsing
         let path = repoUrl.trim().replace(/https?:\/\/github\.com\//i, '').replace(/\/$/, '');
         const parts = path.split('/').filter(Boolean);
         
         if (parts.length < 2) {
-          setIndexStatus({ type: 'error', message: 'the indexing of this repo not happen man (Invalid URL format)' });
+          setIndexStatus({ type: 'error', message: 'The indexing of this repo failed: Invalid GitHub URL format' });
           setTimeout(() => setIsIndexing(false), 3000);
           return;
         }
@@ -839,6 +834,30 @@ const CodeSearchPage = () => {
         repo = parts[1];
       }
 
+      // Now we have valid owner/repo, set active and save history
+      setActiveRepo({ owner, repo, isIndexed: false });
+      setIsIndexing(true);
+      setIndexStatus({ type: 'info', message: 'Initializing Neural Indexing...' });
+
+      // NEW: Immediate Save to Direct History (Senior Dev UX)
+      if (searchMode === 'ephemeral') {
+        const savedDirect = JSON.parse(localStorage.getItem('direct_repo_history') || '[]');
+        const newEntry = { 
+          owner, 
+          name: repo, 
+          isEphemeral: true, 
+          lastAccessed: new Date().toISOString(),
+          status: 'indexing'
+        };
+        const updatedHistory = [
+          newEntry,
+          ...savedDirect.filter(r => !(r.owner === owner && r.name === repo))
+        ].slice(0, 10);
+        localStorage.setItem('direct_repo_history', JSON.stringify(updatedHistory));
+        setDirectRepos(updatedHistory);
+      }
+
+    try {
       const isEphemeral = searchMode === 'ephemeral';
       const response = await indexRepo(owner, repo, searchMode);
       const { jobId, cached, sessionId } = response.data;
