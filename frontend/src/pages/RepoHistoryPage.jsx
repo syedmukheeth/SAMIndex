@@ -196,7 +196,7 @@ const RepoHistoryPage = () => {
                       <div className="p-1.5 rounded-lg bg-accent-cyan/10 text-accent-cyan">
                         <Zap size={14} className="animate-pulse" />
                       </div>
-                      <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-accent-cyan/60">Neural Stream (Ephemeral)</h4>
+                      <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-accent-cyan">Neural Stream</h4>
                    </div>
                    {filteredDirect.length > 0 ? (
                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -217,7 +217,7 @@ const RepoHistoryPage = () => {
                       <div className="p-1.5 rounded-lg bg-accent-blue/10 text-accent-blue">
                         <Database size={14} />
                       </div>
-                      <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-accent-blue/60">Knowledge Vault (Permanent)</h4>
+                      <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-accent-blue">Knowledge Vault</h4>
                    </div>
                    {filteredRepos.length > 0 ? (
                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

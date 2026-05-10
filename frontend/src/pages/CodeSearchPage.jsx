@@ -1132,15 +1132,15 @@ const CodeSearchPage = () => {
                     </button>
                     <button 
                       onClick={() => setSearchMode('ephemeral')}
-                      className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 ${searchMode === 'ephemeral' ? 'bg-accent-purple text-white shadow-[0_0_20px_rgba(147,51,234,0.3)]' : 'text-white/30 hover:text-white/60'}`}
+                      className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 ${searchMode === 'ephemeral' ? 'bg-accent-cyan text-black shadow-[0_0_20px_rgba(80,227,194,0.3)]' : 'text-white/30 hover:text-white/60'}`}
                     >
                       <Zap size={12} />
                       Direct Search
                     </button>
                   </div>
 
-                  <div className={`flex items-center glass-dark rounded-3xl pl-5 pr-2 py-2 border-white/10 min-w-[340px] md:min-w-[450px] focus-within:border-${searchMode === 'ephemeral' ? 'accent-purple' : 'accent-blue'}/40 transition-all shadow-2xl relative z-40 group`}>
-                    <Globe className="text-white/30 group-focus-within:text-accent-blue transition-colors w-4 h-4 shrink-0" />
+                  <div className={`flex items-center glass-dark rounded-3xl pl-5 pr-2 py-2 border-white/10 min-w-[340px] md:min-w-[450px] focus-within:border-${searchMode === 'ephemeral' ? 'accent-cyan' : 'accent-blue'}/40 transition-all shadow-2xl relative z-40 group`}>
+                    <Globe className={`group-focus-within:text-${searchMode === 'ephemeral' ? 'accent-cyan' : 'accent-blue'} text-white/30 transition-colors w-4 h-4 shrink-0`} />
                     <input
                       id="index-input"
                       type="text"
@@ -1160,7 +1160,7 @@ const CodeSearchPage = () => {
                     )}
                     <button 
                       onClick={handleIndexRepo}
-                      className={`${searchMode === 'ephemeral' ? 'bg-accent-purple' : 'bg-accent-blue'} hover:opacity-80 text-white text-[10px] font-black py-2.5 px-6 rounded-2xl transition-all uppercase tracking-widest shadow-lg active:scale-95 border border-white/10`}
+                      className={`${searchMode === 'ephemeral' ? 'bg-accent-cyan text-black' : 'bg-accent-blue text-white'} hover:opacity-80 text-[10px] font-black py-2.5 px-6 rounded-2xl transition-all uppercase tracking-widest shadow-lg active:scale-95 border border-white/10`}
                     >
                       {searchMode === 'ephemeral' ? 'Direct Search' : 'Index Now'}
                     </button>
