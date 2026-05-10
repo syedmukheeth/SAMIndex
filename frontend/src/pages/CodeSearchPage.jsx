@@ -824,8 +824,23 @@ const CodeSearchPage = () => {
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder={previewRepo ? `Search ${previewRepo.repo}...` : (activeRepo ? `Search ${activeRepo.repo}...` : "Ask anything about the codebase...")}
-                    className="w-full bg-transparent text-2xl md:text-3xl font-semibold placeholder-white/5 focus:outline-none relative z-0 pl-12"
+                    className="w-full bg-transparent text-2xl md:text-3xl font-semibold placeholder-white/5 focus:outline-none relative z-0 pl-12 pr-12"
                   />
+                  {query && (
+                    <motion.button
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      onClick={() => {
+                        setQuery('');
+                        setResults([]);
+                        setGroupedResults({});
+                        searchInputRef.current?.focus();
+                      }}
+                      className="absolute right-0 p-2 text-white/20 hover:text-white transition-colors z-10"
+                    >
+                      <X size={20} />
+                    </motion.button>
+                  )}
                 </div>
                 
                 {activeRepo && (
