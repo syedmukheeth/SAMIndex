@@ -89,6 +89,10 @@ exports.protectOrApiKey = async (req, res, next) => {
   // 1) Check for API Key first
   const apiKey = req.headers['x-api-key'];
   if (apiKey && apiKey === (process.env.API_KEY || 'samindex_secret_key_2026')) {
+    req.isDeveloper = true;
+    // Assign a system user if none is logged in
+    const systemUser = await User.findOne().sort({ createdAt: 1 });
+    if (systemUser) req.user = systemUser;
     return next();
   }
 
