@@ -234,7 +234,9 @@ const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
                   {Object.keys(direct).length > 0 && (
                     <div className="space-y-6">
                        <div className="space-y-6">
-                          {Object.entries(direct).map(([repoName, items]) => renderHistoryGroup(repoName, items, 'direct'))}
+                          {Object.entries(direct)
+                            .sort(([, a], [, b]) => new Date(b[0].timestamp) - new Date(a[0].timestamp))
+                            .map(([repoName, items]) => renderHistoryGroup(repoName, items, 'direct'))}
                        </div>
                     </div>
                   )}
@@ -243,7 +245,9 @@ const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
                   {Object.keys(global).length > 0 && (
                     <div className="space-y-6">
                        <div className="space-y-6">
-                          {Object.entries(global).map(([repoName, items]) => renderHistoryGroup(repoName, items, 'global'))}
+                          {Object.entries(global)
+                            .sort(([, a], [, b]) => new Date(b[0].timestamp) - new Date(a[0].timestamp))
+                            .map(([repoName, items]) => renderHistoryGroup(repoName, items, 'global'))}
                        </div>
                     </div>
                   )}
@@ -252,7 +256,9 @@ const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
                   {Object.keys(permanent).length > 0 && (
                     <div className="space-y-6">
                        <div className="space-y-6">
-                          {Object.entries(permanent).map(([repoName, items]) => renderHistoryGroup(repoName, items, 'permanent'))}
+                          {Object.entries(permanent)
+                            .sort(([, a], [, b]) => new Date(b[0].timestamp) - new Date(a[0].timestamp))
+                            .map(([repoName, items]) => renderHistoryGroup(repoName, items, 'permanent'))}
                        </div>
                     </div>
                   )}
