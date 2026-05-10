@@ -600,6 +600,29 @@ const CodeSearchPage = () => {
       }
 
       setLoading(true);
+
+      // Save to history immediately on search (before API call)
+      // so history is recorded even if the API fails
+      try {
+        const target = activeRepo || previewRepo;
+        const savedHistory = JSON.parse(localStorage.getItem('search_history') || '[]');
+        const newEntry = {
+          query: debouncedQuery,
+          timestamp: new Date().toISOString(),
+          id: Math.random().toString(36).substr(2, 9),
+          owner: target?.owner,
+          repo: target?.repo,
+          isEphemeral: searchMode === 'ephemeral'
+        };
+        const updatedHistory = [
+          newEntry,
+          ...savedHistory.filter(h => h.query !== debouncedQuery || h.repo !== newEntry.repo)
+        ].slice(0, 30);
+        localStorage.setItem('search_history', JSON.stringify(updatedHistory));
+      } catch (hErr) {
+        console.error('Failed to save search history:', hErr);
+      }
+
       try {
         const target = activeRepo || previewRepo;
         const response = await searchCode(
@@ -627,27 +650,6 @@ const CodeSearchPage = () => {
           return acc;
         }, {});
         setGroupedResults(groups);
-
-        // Save to local history
-        try {
-          const savedHistory = JSON.parse(localStorage.getItem('search_history') || '[]');
-          const target = activeRepo || previewRepo;
-          const newEntry = { 
-            query: debouncedQuery, 
-            timestamp: new Date().toISOString(),
-            id: Math.random().toString(36).substr(2, 9),
-            owner: target?.owner,
-            repo: target?.repo,
-            isEphemeral: searchMode === 'ephemeral'
-          };
-          const updatedHistory = [
-            newEntry,
-            ...savedHistory.filter(h => h.query !== debouncedQuery)
-          ].slice(0, 30); // Expanded to 30 for better historical depth
-          localStorage.setItem('search_history', JSON.stringify(updatedHistory));
-        } catch (hErr) {
-          console.error('Failed to save search history:', hErr);
-        }
 
       } catch (error) {
         console.error('Code search failed:', error);
