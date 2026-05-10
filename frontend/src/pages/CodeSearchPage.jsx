@@ -170,21 +170,50 @@ const ResultCard = ({ result, idx, copiedId, handleCopy, query }) => {
   );
 };
 
-const IndexingModal = ({ status, progress, repo, isOpen, onComplete }) => {
+const IndexingModal = ({ status, progress, repo, isOpen, mode, onComplete }) => {
+  const [logHistory, setLogHistory] = useState([]);
+  
+  useEffect(() => {
+    if (status) {
+      setLogHistory(prev => [status, ...prev].slice(0, 5));
+    }
+  }, [status]);
+
   if (!isOpen) return null;
+
+  const isEphemeral = mode === 'ephemeral';
+  const theme = isEphemeral ? {
+    color: 'text-accent-cyan',
+    bg: 'bg-accent-cyan/10',
+    border: 'border-accent-cyan/20',
+    glow: 'shadow-[0_0_50px_rgba(0,242,255,0.15)]',
+    icon: <Zap size={40} className="text-accent-cyan animate-pulse" />,
+    label: 'Direct Neural Stream',
+    badge: 'Ephemeral Memory Pipeline',
+    accent: 'accent-cyan'
+  } : {
+    color: 'text-accent-purple',
+    bg: 'bg-accent-purple/10',
+    border: 'border-accent-purple/20',
+    glow: 'shadow-[0_0_50px_rgba(139,92,246,0.15)]',
+    icon: <Database size={40} className="text-accent-purple animate-pulse" />,
+    label: 'Neural Synthesis',
+    badge: 'MongoDB Brain Persistence',
+    accent: 'accent-purple'
+  };
 
   return (
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/90 backdrop-blur-3xl px-6"
+      className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/95 backdrop-blur-3xl px-6"
     >
       <div className="max-w-xl w-full text-center">
         <motion.div 
           initial={{ scale: 0.9, y: 20 }}
           animate={{ scale: 1, y: 0 }}
-          className="glass-dark border border-white/10 rounded-[3rem] p-12 relative overflow-hidden"
+          className={`glass-dark border border-white/10 rounded-[3.5rem] p-12 relative overflow-hidden ${theme.glow}`}
         >
           {/* Scanning Animation */}
           <div className="absolute inset-0 pointer-events-none">
@@ -193,63 +222,89 @@ const IndexingModal = ({ status, progress, repo, isOpen, onComplete }) => {
                 top: ['-100%', '200%'],
               }}
               transition={{ 
-                duration: 3,
+                duration: 2.5,
                 repeat: Infinity,
                 ease: "linear"
               }}
-              className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-accent-blue to-transparent blur-sm opacity-50"
+              className={`absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-${theme.accent} to-transparent blur-sm opacity-40`}
             />
           </div>
 
           <div className="relative z-10">
-            <div className="w-24 h-24 rounded-3xl bg-accent-blue/10 flex items-center justify-center border border-accent-blue/20 mx-auto mb-8 relative">
-               <Cpu className="text-accent-blue animate-pulse" size={40} />
-               <div className="absolute -inset-4 border border-accent-blue/10 rounded-[2rem] animate-[spin_10s_linear_infinity]" />
+            <div className={`w-24 h-24 rounded-[2rem] ${theme.bg} flex items-center justify-center border ${theme.border} mx-auto mb-10 relative`}>
+               {theme.icon}
+               <div className={`absolute -inset-4 border ${theme.border} rounded-[2.5rem] animate-[spin_12s_linear_infinity] opacity-30`} />
+               <div className={`absolute -inset-8 border ${theme.border} rounded-[3rem] animate-[spin_20s_linear_infinity_reverse] opacity-10`} />
             </div>
 
-            <h2 className="text-3xl font-black mb-2 tracking-tight">Neural Indexing</h2>
-            <p className="text-accent-blue font-bold text-sm tracking-[0.2em] uppercase mb-8">{repo}</p>
+            <h2 className="text-4xl font-black mb-2 tracking-tighter uppercase">{theme.label}</h2>
+            <p className={`${theme.color} font-black text-[10px] tracking-[0.4em] uppercase mb-10 opacity-80`}>{repo}</p>
 
-            <div className="space-y-6">
-              <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
-                <motion.div 
-                   initial={{ width: 0 }}
-                   animate={{ width: `${progress}%` }}
-                   className="h-full bg-gradient-to-r from-accent-blue via-accent-purple to-accent-blue bg-[length:200%_auto] animate-[gradient_2s_linear_infinity]"
-                />
+            <div className="space-y-8">
+              <div className="relative">
+                <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-[1px]">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress}%` }}
+                    className={`h-full rounded-full bg-gradient-to-r from-${theme.accent} via-white to-${theme.accent} bg-[length:200%_auto] animate-[gradient_2s_linear_infinity]`}
+                  />
+                </div>
+                {/* Micro-sparkles on progress bar */}
+                <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
+                  <motion.div 
+                    animate={{ x: ['0%', '100%'] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                    className={`w-20 h-full bg-white/20 blur-md`}
+                  />
+                </div>
               </div>
               
-              <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-white/30">
-                <span>{progress >= 100 ? 'Neural Link Established' : 'Synchronizing Neural Nodes'}</span>
-                <span className="text-accent-blue">{progress}% Complete</span>
+              <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                <span className="text-white/30">{progress >= 100 ? 'Neural Integrity Verified' : 'Synchronizing Data Nodes'}</span>
+                <span className={theme.color}>{progress}% Synchronized</span>
               </div>
 
-              {/* Real-time File Counter */}
-              <div className="flex flex-col items-center gap-3">
-                 <div className="flex items-center justify-center gap-2 text-xs font-mono text-white/40">
-                   <Database size={14} className="text-accent-blue" />
-                   <span>{status?.includes('Successfully Indexed') ? status : `${Math.floor((progress / 100) * 50)} files indexed...`}</span>
+              {/* Enhanced Visual Feedback */}
+              <div className="grid grid-cols-2 gap-4 py-6 border-y border-white/5">
+                 <div className="flex flex-col items-start gap-1">
+                    <span className="text-[8px] font-black text-white/20 uppercase tracking-widest">Ingestion Stream</span>
+                    <div className="flex items-center gap-2 text-xs font-mono text-white/60">
+                      <Hash size={12} className={theme.color} />
+                      <span>{Math.floor((progress / 100) * 850)} files</span>
+                    </div>
                  </div>
-                 <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-accent-blue/10 border border-accent-blue/20">
-                   <div className="w-1 h-1 rounded-full bg-accent-blue animate-pulse" />
-                   <span className="text-[8px] font-black tracking-widest text-accent-blue uppercase">Streaming to MongoDB Brain</span>
+                 <div className="flex flex-col items-end gap-1">
+                    <span className="text-[8px] font-black text-white/20 uppercase tracking-widest">Architecture Mode</span>
+                    <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${theme.bg} border ${theme.border}`}>
+                      <div className={`w-1 h-1 rounded-full ${theme.color.replace('text', 'bg')} animate-pulse`} />
+                      <span className={`text-[8px] font-black tracking-widest ${theme.color} uppercase`}>{theme.badge}</span>
+                    </div>
                  </div>
               </div>
 
-              <motion.div 
-                key={status}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                className={`py-4 px-6 rounded-2xl bg-white/5 border ${status?.toLowerCase().includes('fail') || status?.toLowerCase().includes('error') ? 'border-red-500/20 text-red-400' : 'border-white/5 text-white/60'} text-xs font-medium italic`}
-              >
-                "{status || 'Initializing deep scan sequence...'}"
-              </motion.div>
+              <div className="h-28 overflow-hidden relative">
+                <AnimatePresence mode="popLayout">
+                  {logHistory.map((log, i) => (
+                    <motion.div 
+                      key={`${log}-${i}`}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1 - (i * 0.2), y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className={`text-left text-[10px] font-mono leading-relaxed mb-1 truncate ${i === 0 ? 'text-white/60 font-bold' : 'text-white/20'}`}
+                    >
+                      <span className={theme.color}>{'>'}</span> {log}
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+                {/* Bottom Blur to hide overflow */}
+                <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
+              </div>
             </div>
           </div>
         </motion.div>
         
-        <p className="mt-8 text-[10px] font-black uppercase tracking-[0.5em] text-white/20">
-          Do not disconnect from the neural network
+        <p className="mt-10 text-[10px] font-black uppercase tracking-[0.8em] text-white/10 animate-pulse">
+          Neural link active · Maintain connection
         </p>
       </div>
     </motion.div>
@@ -363,6 +418,7 @@ const CodeSearchPage = () => {
   const [activeRepo, setActiveRepo] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [indexedRepos, setIndexedRepos] = useState([]);
+  const [directRepos, setDirectRepos] = useState([]);
   const [loadingRepos, setLoadingRepos] = useState(false);
   const [repoInsight, setRepoInsight] = useState(null);
   const [isSummarizing, setIsSummarizing] = useState(false);
@@ -487,6 +543,10 @@ const CodeSearchPage = () => {
         const response = await getIndexedRepos(100);
         const repos = response.data.repositories.filter(r => r.isIndexed);
         setIndexedRepos(repos);
+        
+        // Load direct repo history from localStorage
+        const savedDirect = JSON.parse(localStorage.getItem('direct_repo_history') || '[]');
+        setDirectRepos(savedDirect);
       } catch (err) {
         console.error('Failed to fetch indexed repos:', err);
       } finally {
@@ -669,6 +729,18 @@ const CodeSearchPage = () => {
           setTimeout(() => {
             setIndexStatus({ type: 'success', message: `${isEphemeral ? 'Transient Indexing' : 'Neural Link'} Established!` });
             
+            if (isEphemeral) {
+              // Save to Direct History
+              const savedDirect = JSON.parse(localStorage.getItem('direct_repo_history') || '[]');
+              const newEntry = { owner, name: repo, isEphemeral: true, lastAccessed: new Date().toISOString() };
+              const updatedHistory = [
+                newEntry,
+                ...savedDirect.filter(r => !(r.owner === owner && r.name === repo))
+              ].slice(0, 6);
+              localStorage.setItem('direct_repo_history', JSON.stringify(updatedHistory));
+              setDirectRepos(updatedHistory);
+            }
+
             setActiveRepo({ owner, repo, isIndexed: true, isEphemeral });
             setIsIndexing(false);
             if (!isEphemeral) setRepoUrl('');
@@ -791,14 +863,9 @@ const CodeSearchPage = () => {
             isOpen={isIndexing}
             status={indexStatus?.message}
             progress={indexProgress}
-            repo={repoUrl}
-            activeRepo={activeRepo}
-            previewRepo={previewRepo}
-            setActiveRepo={setActiveRepo}
-            setSearchParams={setSearchParams}
-            setRepoUrl={setRepoUrl}
-            indexing={isIndexing}
-            handleIndexRepo={handleIndexRepo}
+            repo={repoUrl || (activeRepo?.owner + '/' + activeRepo?.repo)}
+            mode={searchMode}
+            onComplete={() => setIsIndexing(false)}
           />
         )}
       </AnimatePresence>
@@ -1087,29 +1154,46 @@ const CodeSearchPage = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {loadingRepos ? (
                     [1, 2, 3].map(i => <div key={i} className="h-24 glass-dark rounded-3xl border border-white/5 animate-pulse" />)
-                  ) : indexedRepos.length > 0 ? (
-                    indexedRepos.map(repo => (
-                      <motion.button
-                        key={repo.githubId}
-                        whileHover={{ scale: 1.02, borderColor: 'rgba(47,129,247,0.3)' }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => {
-                          setActiveRepo({ owner: repo.owner, repo: repo.name, isIndexed: true });
-                          setSearchParams({ owner: repo.owner, repo: repo.name }); // Persist selection
-                          searchInputRef.current?.focus();
-                        }}
-                        className="flex items-center gap-4 p-4 glass-dark rounded-3xl border border-white/5 text-left group transition-all"
-                      >
-                        <div className="w-10 h-10 rounded-xl bg-accent-blue/10 flex items-center justify-center text-accent-blue group-hover:bg-accent-blue/20 transition-colors">
-                          <Book size={18} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold truncate">{repo.name}</p>
-                          <p className="text-[10px] text-white/30 truncate">{repo.owner}</p>
-                        </div>
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-                      </motion.button>
-                    ))
+                  ) : [...directRepos, ...indexedRepos].length > 0 ? (
+                    [...directRepos, ...indexedRepos].map(repo => {
+                      const isDir = repo.isEphemeral;
+                      return (
+                        <motion.button
+                          key={isDir ? `dir-${repo.owner}-${repo.name}` : repo.githubId}
+                          whileHover={{ scale: 1.02, borderColor: isDir ? 'rgba(0,242,255,0.3)' : 'rgba(47,129,247,0.3)' }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => {
+                            if (isDir) {
+                              setSearchMode('ephemeral');
+                              setRepoUrl(`${repo.owner}/${repo.name}`);
+                              // Auto-trigger indexing if it's direct search
+                              handleIndexRepo();
+                            } else {
+                              setSearchMode('persistent');
+                              setActiveRepo({ owner: repo.owner, repo: repo.name, isIndexed: true });
+                              setSearchParams({ owner: repo.owner, repo: repo.name });
+                              searchInputRef.current?.focus();
+                            }
+                          }}
+                          className={`flex items-center gap-4 p-4 glass-dark rounded-3xl border border-white/5 text-left group transition-all relative overflow-hidden`}
+                        >
+                          {/* Background Glow for Direct */}
+                          {isDir && <div className="absolute inset-0 bg-accent-cyan/5 opacity-0 group-hover:opacity-100 transition-opacity" />}
+                          
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isDir ? 'bg-accent-cyan/10 text-accent-cyan group-hover:bg-accent-cyan/20' : 'bg-accent-blue/10 text-accent-blue group-hover:bg-accent-blue/20'}`}>
+                            {isDir ? <Zap size={18} /> : <Book size={18} />}
+                          </div>
+                          <div className="flex-1 min-w-0 relative z-10">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-bold truncate">{repo.name}</p>
+                              {isDir && <span className="text-[7px] font-black px-1.5 py-0.5 rounded-full bg-accent-cyan/20 text-accent-cyan uppercase tracking-tighter">Direct</span>}
+                            </div>
+                            <p className="text-[10px] text-white/30 truncate">{repo.owner}</p>
+                          </div>
+                          <div className={`w-1.5 h-1.5 rounded-full shadow-lg ${isDir ? 'bg-accent-cyan shadow-accent-cyan/50' : 'bg-emerald-400 shadow-emerald-400/50'}`}></div>
+                        </motion.button>
+                      );
+                    })
                   ) : (
                     <div className="col-span-full py-12 text-center glass-dark rounded-[2.5rem] border border-white/5 border-dashed">
                       <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
