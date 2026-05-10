@@ -56,44 +56,14 @@ const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
     }
   };
 
-  const categorizeHistory = () => {
-    const direct = [];
-    const global = [];
-    const permanent = [];
-
-    history.forEach(item => {
-      if (item.isEphemeral) {
-        direct.push(item);
-      } else if (item.repo === 'Global' || !item.repo || item.repo.toLowerCase() === 'global') {
-        global.push(item);
-      } else {
-        permanent.push(item);
-      }
-    });
-
-    const groupByRepo = (items) => {
-      return items.reduce((groups, item) => {
-        const repoName = item.repo && item.owner && item.repo !== 'Global' ? `${item.owner}/${item.repo}` : (item.repo || 'Global');
-        if (!groups[repoName]) groups[repoName] = [];
-        groups[repoName].push(item);
-        return groups;
-      }, {});
-    };
-
-    const directIds = new Set(direct.map(i => i.id));
-    const globalIds = new Set(global.map(i => i.id));
-
-    return {
-      recent: history.slice(0, 5),
-      direct: groupByRepo(direct),
-      global: groupByRepo(global),
-      permanent: groupByRepo(permanent),
-      directIds,
-      globalIds
-    };
+  const groupByRepo = (items) => {
+    return items.reduce((groups, item) => {
+      const repoName = item.repo && item.owner && item.repo !== 'Global' ? `${item.owner}/${item.repo}` : (item.repo || 'Global');
+      if (!groups[repoName]) groups[repoName] = [];
+      groups[repoName].push(item);
+      return groups;
+    }, {});
   };
-
-  const { recent, direct, global, permanent, directIds, globalIds } = categorizeHistory();
 
   const renderHistoryGroup = (repoName, items, type = 'permanent') => {
     const isEphemeral = type === 'direct';
