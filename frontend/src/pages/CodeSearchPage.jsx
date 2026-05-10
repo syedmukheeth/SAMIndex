@@ -1239,43 +1239,7 @@ const CodeSearchPage = () => {
                         </div>
                       )}
 
-                      {/* Section 2: Knowledge Vault (Permanent) */}
-                      {indexedRepos.length > 0 && (
-                        <div className="space-y-6">
-                          <div className="flex items-center gap-3 px-2">
-                             <div className="p-1.5 rounded-lg bg-accent-blue/10 text-accent-blue">
-                               <Database size={14} />
-                             </div>
-                             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-accent-blue">Permanent Search</h4>
-                          </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {indexedRepos.map(repo => (
-                              <motion.button
-                                key={repo.githubId}
-                                whileHover={{ scale: 1.02, borderColor: 'rgba(47,129,247,0.3)' }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => {
-                                  setSearchMode('persistent');
-                                  setActiveRepo({ owner: repo.owner, repo: repo.name, isIndexed: true });
-                                  setSearchParams({ owner: repo.owner, repo: repo.name });
-                                  searchInputRef.current?.focus();
-                                }}
-                                className="flex items-center gap-4 p-4 glass-dark rounded-3xl border border-white/5 text-left group transition-all relative overflow-hidden"
-                              >
-                                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-accent-blue/10 text-accent-blue group-hover:bg-accent-blue/20 transition-colors">
-                                  <Book size={18} />
-                                </div>
-                                <div className="flex-1 min-w-0 relative z-10">
-                                  <p className="text-sm font-bold truncate">{repo.name}</p>
-                                  <p className="text-[10px] text-white/30 truncate">{repo.owner}</p>
-                                </div>
-                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.5)]"></div>
-                              </motion.button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {directRepos.length === 0 && indexedRepos.length === 0 && (
+                      {directRepos.length === 0 && indexedRepos.length === 0 && (
                         <div className="col-span-full py-12 text-center glass-dark rounded-[2.5rem] border border-white/5 border-dashed">
                           <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
                             <Database size={20} className="text-white/20" />
