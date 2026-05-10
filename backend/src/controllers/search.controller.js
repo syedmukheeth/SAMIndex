@@ -48,21 +48,25 @@ exports.searchAll = catchAsync(async (req, res, next) => {
       .limit(Number(limit))
       .lean();
   } else if (req.user) {
-    // Personalized Mode: Only show what THIS user has indexed or accessed
+    // Personalized Mode: Show what user OWNS OR has ACCESS history for
     const userRepoLinks = await UserRepo.find({ userId: req.user._id })
       .select('repositoryId')
       .lean();
     
-    const repoIds = userRepoLinks.map(link => link.repositoryId);
+    const linkedRepoIds = userRepoLinks.map(link => link.repositoryId);
     
-    if (repoIds.length > 0) {
-      repositories = await Repository.find({ ...searchQuery, _id: { $in: repoIds } }, textScoreProjection)
-        .select(excludeFields)
-        .sort(q ? (sort === 'score' ? { stars: -1 } : textScoreProjection) : { lastIndexedAt: -1 })
-        .skip(skip)
-        .limit(Number(limit))
-        .lean();
-    }
+    repositories = await Repository.find({ 
+      ...searchQuery,
+      $or: [
+        { user: req.user._id },
+        { _id: { $in: linkedRepoIds } }
+      ]
+    }, textScoreProjection)
+      .select(excludeFields)
+      .sort(q ? (sort === 'score' ? { stars: -1 } : textScoreProjection) : { lastIndexedAt: -1 })
+      .skip(skip)
+      .limit(Number(limit))
+      .lean();
   }
 
   const users = q 
@@ -149,20 +153,38 @@ exports.claimOrphanRepos = catchAsync(async (req, res, next) => {
     return next(new AppError('No authenticated user found to claim workspaces. Please log in or use Developer Mode.', 401));
   }
 
-  // Find all repos where user field is missing or null
-  const result = await Repository.updateMany(
-    { $or: [ { user: { $exists: false } }, { user: null } ] },
-    { $set: { user: req.user._id } }
-  );
+  // 1. Find all repos where user field is missing or null
+  const orphanRepos = await Repository.find(
+    { $or: [ { user: { $exists: false } }, { user: null } ] }
+  ).select('_id');
+
+  if (orphanRepos.length > 0) {
+    // 2. Claim them in Repository model
+    await Repository.updateMany(
+      { _id: { $in: orphanRepos.map(r => r._id) } },
+      { $set: { user: req.user._id } }
+    );
+
+    // 3. Create UserRepo entries for each (Bulk)
+    const userRepoOps = orphanRepos.map(repo => ({
+      updateOne: {
+        filter: { userId: req.user._id, repositoryId: repo._id },
+        update: { userId: req.user._id, repositoryId: repo._id, lastAccessedAt: new Date() },
+        upsert: true
+      }
+    }));
+
+    await UserRepo.bulkWrite(userRepoOps);
+  }
 
   // Clear search cache to reflect changes immediately
   cache.flushAll();
 
   res.status(200).json({
     status: 'success',
-    message: `${result.modifiedCount} neural workspaces restored to account: ${req.user.name}`,
+    message: `${orphanRepos.length} repositories restored to account: ${req.user.name}`,
     data: {
-      modifiedCount: result.modifiedCount,
+      modifiedCount: orphanRepos.length,
       user: req.user.name
     }
   });
