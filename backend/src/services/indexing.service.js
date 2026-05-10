@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
 const { promisify } = require('util');
+const os = require('os');
 const execAsync = promisify(exec);
 const fsPromises = fs.promises;
 
@@ -31,9 +32,12 @@ const processIndexing = async (data, job = null) => {
     }
 
     // NEW: TURBO INDEXING STRATEGY (ZIP Based)
-    // This allows 10k+ files to be indexed in minutes instead of hours
-    const tempDir = path.join(process.cwd(), 'temp_indexing', `${owner}_${repo}_${id}`);
+    // Using os.tmpdir() to ensure writability on cloud platforms like Render
+    const tempRoot = path.join(os.tmpdir(), 'samindex_temp');
+    const tempDir = path.join(tempRoot, `${owner}_${repo}_${id}`);
     const zipPath = `${tempDir}.zip`;
+    
+    console.log(`[TurboIndexer] Temp path: ${tempDir}`);
     
     try {
       if (!fs.existsSync(path.dirname(tempDir))) {
@@ -46,12 +50,17 @@ const processIndexing = async (data, job = null) => {
       const downloadSuccess = await githubService.downloadRepoZip(owner, repo, zipPath);
       
       if (downloadSuccess) {
-        console.log(`[TurboIndexer] Extracting ZIP...`);
+        console.log(`[TurboIndexer] Extracting ZIP to ${tempDir}...`);
         if (job) await job.updateProgress(25);
         
-        fs.mkdirSync(tempDir, { recursive: true });
-        // Use tar.exe which we verified is available
-        await execAsync(`tar -xf "${zipPath}" -C "${tempDir}" --strip-components=1`);
+        if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+        
+        // Use a more robust extraction command for Linux/macOS/Windows
+        const tarCmd = process.platform === 'win32' 
+          ? `tar -xf "${zipPath}" -C "${tempDir}" --strip-components=1`
+          : `tar -xf "${zipPath}" -C "${tempDir}" --strip-components=1`;
+          
+        await execAsync(tarCmd);
         
         console.log(`[TurboIndexer] Scanning extracted files...`);
         const files = [];
@@ -112,6 +121,7 @@ const processIndexing = async (data, job = null) => {
             });
 
             if (bulkOps.length >= 100) {
+              console.log(`[TurboIndexer] Committing batch of ${bulkOps.length} files...`);
               await CodeFile.bulkWrite(bulkOps, { ordered: false });
               indexedCount += bulkOps.length;
               bulkOps.length = 0;
@@ -322,10 +332,11 @@ const finalizeIndexing = async (owner, repo, id, found, indexed, failed, job, jo
       isIndexed: true, 
       lastIndexedAt: new Date(),
       description: repoSummary || undefined // Update with AI summary if available
-    }
+    },
+    { upsert: true }
   );
 
-  console.log(`[IndexingService] COMPLETED: ${indexed} indexed, ${failed} failed.`);
+  console.log(`[IndexingService] COMPLETED: ${indexed} indexed, ${failed} failed for ${owner}/${repo}`);
   
   return {
     filesFound: found,
