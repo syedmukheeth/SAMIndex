@@ -39,8 +39,9 @@ const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
       directRepos.map(r => `${r.owner}/${r.name}`.toLowerCase())
     );
     return items.map(item => {
-      if (item.isEphemeral !== undefined) return item; // already tagged
+      if (item.isEphemeral === true) return item; // already confirmed direct
       const key = item.owner && item.repo ? `${item.owner}/${item.repo}`.toLowerCase() : '';
+      // If this repo is in direct_repo_history, it was a Direct session
       return { ...item, isEphemeral: directRepoKeys.has(key) };
     });
   };
@@ -246,7 +247,7 @@ const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
                             const isDirect = directIds.has(item.id);
                             const isGlobal = globalIds.has(item.id);
                             const colorClass = isDirect
-                              ? 'bg-[#00f2ff]/10 text-[#00f2ff] group-hover:bg-[#00f2ff]/20'
+                              ? 'bg-accent-cyan/10 text-accent-cyan group-hover:bg-accent-cyan/20'
                               : isGlobal
                               ? 'bg-accent-purple/10 text-accent-purple group-hover:bg-accent-purple/20'
                               : 'bg-accent-blue/10 text-accent-blue group-hover:bg-accent-blue/20';
