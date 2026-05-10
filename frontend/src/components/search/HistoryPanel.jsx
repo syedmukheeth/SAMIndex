@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { History, Trash2, Search, X, Clock, Code, Zap, Database } from 'lucide-react';
+import { History, Trash2, Search, X, Clock, Code, Zap, Database, Globe } from 'lucide-react';
 import { getHistory, clearHistory } from '../../services/api';
 
 const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
