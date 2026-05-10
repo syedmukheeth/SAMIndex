@@ -54,7 +54,7 @@ const RepoHistoryPage = () => {
               className="flex items-center gap-2 text-white/40 hover:text-accent-blue transition-colors group text-xs font-black uppercase tracking-widest"
             >
               <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
-              Back to Neural Search
+              Back to Search
             </motion.button>
             
             <div className="space-y-2">
@@ -65,7 +65,7 @@ const RepoHistoryPage = () => {
                 <h1 className="text-4xl md:text-5xl font-black tracking-tight">Repo History</h1>
               </div>
               <p className="text-white/30 text-lg max-w-2xl font-medium">
-                Your personal neural core containing all indexed codebases. Currently managing <span className="text-accent-blue font-black">{repos.length} established links</span>.
+                Your personal repository collection containing all indexed codebases. Currently managing <span className="text-accent-blue font-black">{repos.length} established links</span>.
               </p>
             </div>
           </div>
@@ -77,7 +77,7 @@ const RepoHistoryPage = () => {
                <span className="text-2xl font-black text-accent-blue">{repos.length}</span>
             </div>
             <div className="px-6 py-4 glass-dark rounded-3xl border border-white/5 min-w-[140px]">
-               <span className="text-[10px] font-black uppercase tracking-widest text-white/20 block mb-1">Neural Status</span>
+               <span className="text-[10px] font-black uppercase tracking-widest text-white/20 block mb-1">Index Status</span>
                <span className="text-2xl font-black text-emerald-400">ACTIVE</span>
             </div>
           </div>
@@ -152,7 +152,7 @@ const RepoHistoryPage = () => {
                     </div>
 
                     <p className={`text-sm ${repo.description ? 'text-white/60' : 'text-white/40'} line-clamp-2 mb-8 flex-1 italic leading-relaxed`}>
-                      {repo.description ? `"${repo.description}"` : "Deep neural scan complete. Contextual relationships established for this code repository."}
+                      {repo.description ? `"${repo.description}"` : "Repository scan complete. Contextual relationships established for this codebase."}
                     </p>
 
                     <div className="grid grid-cols-2 gap-4 mt-auto">
@@ -199,7 +199,7 @@ const RepoHistoryPage = () => {
                 </div>
                 <h3 className="text-2xl font-black mb-3">No Repos Found</h3>
                 <p className="text-white/30 max-w-xs mx-auto text-sm leading-relaxed mb-8">
-                  No repositories matching "{searchQuery}" have been neural-linked yet.
+                  No repositories matching "{searchQuery}" have been indexed yet.
                 </p>
                   <motion.button
                     whileHover={{ scale: 1.05 }}

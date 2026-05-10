@@ -64,11 +64,20 @@ const processIndexing = async (data, job = null) => {
             } else {
               const relPath = path.relative(tempDir, fullPath).replace(/\\/g, '/');
               const ext = `.${relPath.split('.').pop()}`;
-              const allowedExtensions = ['.js', '.ts', '.jsx', '.tsx', '.py', '.java', '.cpp', '.go', '.rs', '.swift', '.kt'];
+              const allowedExtensions = [
+                '.js', '.ts', '.jsx', '.tsx', 
+                '.cpp', '.c', '.h', '.hpp', '.cc',
+                '.py', '.java', '.json', '.go', 
+                '.rb', '.php', '.cs', '.sh', 
+                '.yml', '.yaml', '.md', '.sql', 
+                '.rs', '.swift', '.kt', '.kts'
+              ];
               if (allowedExtensions.includes(ext)) {
                 const stats = await fsPromises.stat(fullPath);
                 if (stats.size < 1024000) { // 1MB limit
                   files.push({ fullPath, relPath, size: stats.size });
+                } else {
+                  console.log(`[TurboIndexer] Skipping large file: ${relPath} (${Math.round(stats.size/1024)}KB)`);
                 }
               }
             }
@@ -76,7 +85,7 @@ const processIndexing = async (data, job = null) => {
         };
 
         await getAllFiles(tempDir);
-        console.log(`[TurboIndexer] Discovered ${files.length} code files via ZIP.`);
+        console.log(`[TurboIndexer] SUCCESS: Discovered ${files.length} code files via ZIP.`);
 
         if (files.length > 0) {
           let indexedCount = 0;
@@ -158,7 +167,10 @@ const processIndexing = async (data, job = null) => {
       
       // Still update metadata so the UI knows we scanned it
       await Repository.findOneAndUpdate(
-        { owner, name: repo },
+        { 
+          owner: { $regex: new RegExp(`^${owner}$`, 'i') }, 
+          name: { $regex: new RegExp(`^${repo}$`, 'i') } 
+        },
         { isIndexed: true, lastIndexedAt: new Date() }
       );
       
@@ -302,7 +314,10 @@ const finalizeIndexing = async (owner, repo, id, found, indexed, failed, job, jo
   
   // Update Repository Metadata
   await Repository.findOneAndUpdate(
-    { owner, name: repo },
+    { 
+      owner: { $regex: new RegExp(`^${owner}$`, 'i') }, 
+      name: { $regex: new RegExp(`^${repo}$`, 'i') } 
+    },
     { 
       isIndexed: true, 
       lastIndexedAt: new Date(),

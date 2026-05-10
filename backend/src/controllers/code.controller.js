@@ -35,9 +35,10 @@ exports.indexRepository = catchAsync(async (req, res, next) => {
   const cacheKey = `indexed:${owner.toLowerCase()}:${repo.toLowerCase()}`;
   
   // 2. Pre-flight Check: Check DB status
-  const existingRepo = await Repository.findOne({ 
-    owner: owner.toLowerCase(), 
-    name: repo.toLowerCase() 
+  // Case-insensitive lookup for repository
+  let existingRepo = await Repository.findOne({ 
+    owner: { $regex: new RegExp(`^${owner}$`, 'i') }, 
+    name: { $regex: new RegExp(`^${repo}$`, 'i') } 
   });
 
   if (!force && existingRepo?.isIndexed) {
@@ -345,12 +346,22 @@ exports.getRepoDetails = catchAsync(async (req, res, next) => {
   const { owner, repo } = req.params;
 
   const repository = await Repository.findOne({ 
-    owner: owner.toLowerCase(), 
-    name: repo.toLowerCase() 
+    owner: { $regex: new RegExp(`^${owner}$`, 'i') }, 
+    name: { $regex: new RegExp(`^${repo}$`, 'i') } 
   });
 
   if (!repository) {
     return next(new AppError('Repository not found in SAMIndex database', 404));
+  }
+
+  // 4. Update User-Repo Association for Personalization
+  if (req.user && repository) {
+    const UserRepo = require('../models/userRepo.model');
+    await UserRepo.findOneAndUpdate(
+      { userId: req.user.id, repositoryId: repository._id },
+      { lastAccessedAt: new Date() },
+      { upsert: true }
+    ).catch(err => console.error('Error updating UserRepo link:', err));
   }
 
   res.status(200).json({
@@ -411,7 +422,10 @@ exports.getRepoSummary = catchAsync(async (req, res, next) => {
     // 2. Persist the summary to the database
     const Repository = require('../models/repository.model');
     await Repository.findOneAndUpdate(
-      { owner: owner.toLowerCase(), name: repo.toLowerCase() },
+      { 
+        owner: { $regex: new RegExp(`^${owner}$`, 'i') }, 
+        name: { $regex: new RegExp(`^${repo}$`, 'i') } 
+      },
       { description: summary }
     );
 

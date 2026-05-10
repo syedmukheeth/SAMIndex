@@ -942,9 +942,9 @@ const CodeSearchPage = () => {
                       <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Database size={20} className="text-white/20" />
                       </div>
-                      <h4 className="text-sm font-bold mb-2">Neural Brain Empty</h4>
+                      <h4 className="text-sm font-bold mb-2">Repository History Empty</h4>
                       <p className="text-[10px] text-white/30 max-w-[200px] mx-auto leading-relaxed mb-6">
-                        No neural repos established yet. You can restore your legacy indexed repos below.
+                        No repositories indexed yet. You can restore your previously indexed repos below.
                       </p>
                       <motion.button
                         whileHover={{ scale: 1.05 }}
@@ -1008,7 +1008,7 @@ const CodeSearchPage = () => {
                   </h2>
                   <div className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-white/2 border border-white/5 backdrop-blur-md">
                      <Database size={12} className="text-accent-blue" />
-                     <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Neural MongoDB Brain</span>
+                     <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">SAM Indexing Engine</span>
                   </div>
                </div>
 
@@ -1059,7 +1059,7 @@ const CodeSearchPage = () => {
               </div>
               <h3 className="text-2xl font-black mb-3">Zero Hits</h3>
               <p className="text-white/30 max-w-xs mx-auto text-sm leading-relaxed">
-                No matches found in the neural index. <br /> 
+                No matches found in the repository index. <br /> 
                 Try refining your query or index a new repo.
               </p>
             </motion.div>
@@ -1113,11 +1113,11 @@ const CodeSearchPage = () => {
             <div className="flex items-center justify-center md:justify-start gap-2">
               <div className="w-2 h-2 rounded-full bg-accent-blue animate-ping" />
               <p className="text-[10px] font-black tracking-[0.5em] uppercase text-white/60">
-                Neural Code Intelligence
+                SAM Code Intelligence
               </p>
             </div>
             <p className="text-xs text-white/20 font-medium max-w-sm leading-relaxed">
-              Decentralized repository indexing with sub-millisecond contextual retrieval and advanced dependency mapping. Powered by the **Neural MongoDB Brain**.
+              Decentralized repository indexing with sub-millisecond contextual retrieval and advanced dependency mapping. Powered by the **SAM Indexing Engine**.
             </p>
             <div className="flex items-center justify-center md:justify-start gap-4 pt-2">
                 <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
@@ -1126,7 +1126,7 @@ const CodeSearchPage = () => {
                 </div>
                 <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-accent-blue/5 border border-accent-blue/10">
                    <Database size={10} className="text-accent-blue/60" />
-                   <span className="text-[9px] font-bold text-accent-blue/60 uppercase tracking-widest">MONGODB BRAIN V2.0</span>
+                   <span className="text-[9px] font-bold text-accent-blue/60 uppercase tracking-widest">SAM REPOSITORY INDEX V2.0</span>
                 </div>
               </div>
           </div>
