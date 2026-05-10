@@ -237,7 +237,6 @@ const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
                        </div>
                     </div>
                   )}
-}
                 </div>
               )}
             </div>
