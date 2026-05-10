@@ -45,8 +45,8 @@ class EphemeralSearchService {
     
     const pipeline = redis.pipeline();
     
-    // We only index words between 3 and 20 chars to keep Redis clean
-    const filteredWords = words.filter(w => w.length >= 3 && w.length <= 20);
+    // We index words >= 2 chars for better coverage in ephemeral mode
+    const filteredWords = words.filter(w => w.length >= 2 && w.length <= 30);
     
     for (const word of filteredWords) {
       const idxKey = `${this.prefix}:repo:${sessionId}:idx:${word}`;
@@ -54,7 +54,12 @@ class EphemeralSearchService {
       pipeline.expire(idxKey, this.TTL);
     }
     
-    // 3. Update Metadata
+    // 3. Store in a file set for deep scanning fallback
+    const setKey = `${this.prefix}:repo:${sessionId}:files`;
+    pipeline.sadd(setKey, filePath);
+    pipeline.expire(setKey, this.TTL);
+
+    // 4. Update Metadata
     const metaKey = `${this.prefix}:meta:${sessionId}`;
     pipeline.hincrby(metaKey, 'filesCount', 1);
     
@@ -89,8 +94,25 @@ class EphemeralSearchService {
     if (words.length === 0) return [];
 
     // Intersect sets for multiple keywords
-    const keys = words.map(w => `${this.prefix}:repo:${sessionId}:idx:${w}`);
-    const matchingPaths = await redis.sinter(keys);
+    const keys = words.filter(w => w.length >= 2).map(w => `${this.prefix}:repo:${sessionId}:idx:${w}`);
+    let matchingPaths = keys.length > 0 ? await redis.sinter(keys) : [];
+    
+    // DEEP SCAN FALLBACK: If no keyword matches or query is very short, perform regex scan on the repo
+    if (matchingPaths.length === 0) {
+      console.log(`[EphemeralSearch] Keyword miss for "${q}". Triggering Deep Scan...`);
+      const allFilesKey = `${this.prefix}:repo:${sessionId}:files`;
+      const allPaths = await redis.smembers(allFilesKey);
+      
+      for (const p of allPaths) {
+        if (p.toLowerCase().includes(q)) {
+          matchingPaths.push(p);
+          if (matchingPaths.length >= 10) break; // Cap ephemeral results
+        }
+      }
+
+      // If still no path matches, we could scan content, but that's expensive.
+      // For ephemeral, we'll stick to path-based deep scan as first fallback.
+    }
 
     if (!matchingPaths || matchingPaths.length === 0) return [];
 

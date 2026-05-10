@@ -489,7 +489,10 @@ const CodeSearchPage = () => {
     const syncRepoStatus = async () => {
       const owner = searchParams.get('owner');
       const repo = searchParams.get('repo');
+      const sid = searchParams.get('sid');
       
+      if (sid) setEphemeralSessionId(sid);
+
       if (owner && repo) {
         try {
           const response = await getRepoDetails(owner, repo);
@@ -746,7 +749,12 @@ const CodeSearchPage = () => {
             if (!isEphemeral) setRepoUrl('');
             setShowSuccess(true);
             
-            setSearchParams({ owner, repo, mode: isEphemeral ? 'ephemeral' : 'persistent' });
+            setSearchParams({ 
+              owner, 
+              repo, 
+              mode: isEphemeral ? 'ephemeral' : 'persistent',
+              sid: isEphemeral ? `${owner.toLowerCase()}:${repo.toLowerCase()}` : undefined
+            });
             
             setTimeout(() => {
               if (query) handleSearch(query);

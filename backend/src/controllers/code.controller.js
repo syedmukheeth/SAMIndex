@@ -239,6 +239,14 @@ exports.searchCode = catchAsync(async (req, res, next) => {
         data: formatted,
         isEphemeral: true
       });
+    } else {
+      // Ephemeral session search returned nothing - DO NOT fallthrough to MongoDB
+      return res.status(200).json({
+        status: 'success',
+        count: 0,
+        data: [],
+        isEphemeral: true
+      });
     }
   }
 
