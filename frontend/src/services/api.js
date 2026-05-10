@@ -29,10 +29,11 @@ export const getUserDetails = async (username) => {
   return data;
 };
 
-export const searchCode = async (query, repo = '', owner = '', page = 1) => {
+export const searchCode = async (query, repo = '', owner = '', sessionId = '', page = 1) => {
   let url = `/code-search?q=${query}&page=${page}`;
   if (repo) url += `&repo=${repo}`;
   if (owner) url += `&owner=${owner}`;
+  if (sessionId) url += `&sessionId=${sessionId}`;
   const { data } = await api.get(url);
   return data;
 };
@@ -49,13 +50,23 @@ export const clearHistory = async () => {
   return data;
 };
 
-export const indexRepo = async (owner, repo) => {
-  const { data } = await api.post('/index-repo', { owner, repo });
+export const indexRepo = async (owner, repo, mode = 'persistent') => {
+  const { data } = await api.post('/index-repo', { owner, repo, mode });
   return data;
 };
 
 export const getIndexStatus = async (jobId) => {
   const { data } = await api.get(`/index-status/${jobId}`);
+  return data;
+};
+
+export const getEphemeralStatus = async (sessionId) => {
+  const { data } = await api.get(`/ephemeral-status/${sessionId}`);
+  return data;
+};
+
+export const getRepoIntelligence = async (owner, repo) => {
+  const { data } = await api.get(`/repo-intelligence/${owner}/${repo}`);
   return data;
 };
 

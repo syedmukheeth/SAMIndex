@@ -24,6 +24,8 @@ router.use('/history', historyRoutes);
 // Index Repository route
 router.post('/index-repo', authMiddleware.protectOrApiKey, codeController.indexRepository);
 router.get('/index-status/:jobId', codeController.getIndexStatus);
+router.get('/ephemeral-status/:sessionId', codeController.getEphemeralStatus);
+router.get('/repo-intelligence/:owner/:repo', codeController.getRepoIntelligence);
 router.get('/repo-details/:owner/:repo', codeController.getRepoDetails);
 
 // Code Search route

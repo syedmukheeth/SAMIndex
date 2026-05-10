@@ -97,14 +97,15 @@ exports.indexRepository = catchAsync(async (req, res, next) => {
   }
 
   // 4. Queue vs Fallback (Lightweight)
+  const isEphemeral = req.body.mode === 'ephemeral';
   const jobId = isRedisConnected() ? `job-${Date.now()}` : `local-${Date.now()}`;
   
   if (isRedisConnected()) {
-    const job = await indexQueue.add(`index-${owner}-${repo}`, { owner, repo }, { jobId });
+    const job = await indexQueue.add(`index-${owner}-${repo}`, { owner, repo, isEphemeral }, { jobId });
     cache.set(cacheKey, 'pending', 300);
   } else {
     // Start indexing in background without awaiting discovery
-    indexingService.processIndexing({ owner, repo, jobId }).catch(err => {
+    indexingService.processIndexing({ owner, repo, jobId, isEphemeral }).catch(err => {
       console.error('[Local Fallback Error]:', err);
     });
     cache.set(cacheKey, 'pending', 300);
@@ -112,8 +113,14 @@ exports.indexRepository = catchAsync(async (req, res, next) => {
 
   res.status(202).json({
     status: 'success',
-    message: 'Indexing sequence initiated in the neural background.',
-    data: { jobId, owner, repo }
+    message: isEphemeral ? 'Ephemeral Direct Search initiated.' : 'Indexing sequence initiated in the neural background.',
+    data: { 
+      jobId, 
+      owner, 
+      repo,
+      mode: isEphemeral ? 'ephemeral' : 'persistent',
+      sessionId: isEphemeral ? `${owner.toLowerCase()}:${repo.toLowerCase()}` : null
+    }
   });
 });
 
@@ -189,13 +196,50 @@ exports.getIndexStatus = catchAsync(async (req, res, next) => {
 });
 
 exports.searchCode = catchAsync(async (req, res, next) => {
-  const { q, repo, page = 1, limit = 20 } = req.query;
+  const { q, repo, owner, sessionId, page = 1, limit = 20 } = req.query;
 
   if (!q) {
     return res.status(200).json({
       status: 'success',
       data: []
     });
+  }
+
+  // NEW: Ephemeral Search Path
+  if (sessionId) {
+    const ephemeralService = require('../services/ephemeral.service');
+    console.log(`[CodeSearch] Switching to EPHEMERAL mode for session: ${sessionId}`);
+    
+    const ephemeralResults = await ephemeralService.search(sessionId, q);
+    
+    if (ephemeralResults && ephemeralResults.length > 0) {
+      // Format snippets for ephemeral results
+      const formatted = ephemeralResults.map(res => {
+        const lines = res.content.split('\n');
+        const matchIdx = lines.findIndex(l => l.toLowerCase().includes(q.toLowerCase()));
+        const start = Math.max(0, matchIdx - 2);
+        const end = Math.min(lines.length, matchIdx + 3);
+        
+        return {
+          repo: res.repo,
+          owner: res.owner,
+          path: res.path,
+          relevance: 10,
+          isEphemeral: true,
+          snippets: [{
+            line: matchIdx + 1,
+            content: lines.slice(start, end).join('\n')
+          }]
+        };
+      });
+
+      return res.status(200).json({
+        status: 'success',
+        count: formatted.length,
+        data: formatted,
+        isEphemeral: true
+      });
+    }
   }
 
   const pageNum = parseInt(page, 10);
@@ -439,7 +483,55 @@ exports.getRepoSummary = catchAsync(async (req, res, next) => {
     console.error('[Controller] Repo summary failed:', err.message);
     res.status(200).json({
       status: 'success',
-      data: { summary: "Neural Analysis Offline: Workspace context established but summary generation skipped." }
     });
   }
+});
+
+/**
+ * Get Progressive Repository Intelligence (Genome)
+ */
+exports.getRepoIntelligence = async (req, res) => {
+  const { owner, repo } = req.params;
+  const intelligenceService = require('../services/intelligence.service');
+
+  try {
+    const genome = await intelligenceService.getIntelligence(owner, repo);
+    
+    res.status(200).json({
+      status: 'success',
+      data: { 
+        genome: genome || { 
+          status: 'Analysis in progress...', 
+          architecture: 'Scanning signals...',
+          scalability: { score: 0, reasoning: 'Establishing baseline...' },
+          security: { score: 0, reasoning: 'Mapping threat surface...' },
+          observability: { score: 0, reasoning: 'Syncing telemetry...' },
+          infra_maturity: { score: 0, reasoning: 'Verifying infra nodes...' },
+          realtime_readiness: { score: 0, reasoning: 'Establishing queue context...' }
+        }
+      }
+    });
+  } catch (err) {
+    console.error('[Controller] Intelligence fetch failed:', err.message);
+    res.status(500).json({ status: 'error', message: 'Failed to fetch intelligence' });
+  }
+};
+
+/**
+ * @desc    Get status of an ephemeral session
+ * @route   GET /api/v1/ephemeral-status/:sessionId
+ */
+exports.getEphemeralStatus = catchAsync(async (req, res, next) => {
+  const { sessionId } = req.params;
+  const ephemeralService = require('../services/ephemeral.service');
+  
+  const status = await ephemeralService.getSessionStatus(sessionId);
+  if (!status || Object.keys(status).length === 0) {
+    return next(new AppError('Ephemeral session not found or expired', 404));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    data: status
+  });
 });

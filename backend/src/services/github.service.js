@@ -283,19 +283,17 @@ class GitHubService {
   }
 
   /**
-   * Download the entire repository as a ZIP (for high-speed indexing)
+   * Returns a stream of the repository ZIP archive
    */
-  async downloadRepoZip(owner, repo, destPath) {
+  async getRepoZipStream(owner, repo) {
     try {
       const response = await this.client.get(`/repos/${owner}/${repo}/zipball`, {
         responseType: 'stream'
       });
-      
-      await pipeline(response.data, fs.createWriteStream(destPath));
-      return true;
+      return response.data;
     } catch (error) {
-      console.error(`[GitHub API] ZIP Download failed for ${owner}/${repo}:`, error.message);
-      return false;
+      console.error(`[GitHub API] ZIP Stream request failed for ${owner}/${repo}:`, error.message);
+      throw error;
     }
   }
 

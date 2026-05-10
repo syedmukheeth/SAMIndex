@@ -6,7 +6,10 @@ import {
   Zap, Hash, ExternalLink, Globe, Sparkles, Command, ArrowRight, ArrowLeft, X,
   History as HistoryIcon
 } from 'lucide-react';
-import { searchCode, indexRepo, getIndexStatus, getIndexedRepos, getRepoDetails, aiExplain, repoSummary } from '../services/api';
+import { 
+  searchCode, indexRepo, getIndexStatus, getIndexedRepos, 
+  getRepoDetails, aiExplain, repoSummary, getRepoIntelligence 
+} from '../services/api';
 import { useDebounce } from '../hooks/useDebounce';
 import { useSearchParams, Link } from 'react-router-dom';
 import Skeleton from '../components/ui/Skeleton';
@@ -253,6 +256,95 @@ const IndexingModal = ({ status, progress, repo, isOpen, onComplete }) => {
   );
 };
 
+const IntelligencePanel = ({ genome, isLoading }) => {
+  if (!genome && !isLoading) return null;
+
+  const metrics = [
+    { label: 'Scalability', ...genome?.scalability, color: 'text-accent-blue', bg: 'bg-accent-blue/10' },
+    { label: 'Security', ...genome?.security, color: 'text-red-400', bg: 'bg-red-500/10' },
+    { label: 'Observability', ...genome?.observability, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+    { label: 'Infra Maturity', ...genome?.infra_maturity, color: 'text-accent-purple', bg: 'bg-accent-purple/10' },
+    { label: 'Realtime', ...genome?.realtime_readiness, color: 'text-accent-cyan', bg: 'bg-accent-cyan/10' }
+  ];
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      className="glass-dark rounded-[2.5rem] border border-white/5 p-8 h-fit sticky top-32 overflow-hidden"
+    >
+      <div className="absolute top-0 right-0 p-4 opacity-10">
+        <Cpu size={120} className="text-accent-blue" />
+      </div>
+
+      <div className="relative z-10">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="p-2.5 rounded-xl bg-accent-blue/10 text-accent-blue border border-accent-blue/20">
+            <Sparkles size={20} className="animate-pulse" />
+          </div>
+          <div>
+            <h3 className="text-xl font-black tracking-tight">Repository Genome</h3>
+            <p className="text-[10px] font-black uppercase tracking-widest text-white/30">AI Architecture Intelligence</p>
+          </div>
+        </div>
+
+        <div className="mb-8 space-y-4">
+          <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 italic text-sm text-white/60 leading-relaxed">
+            "{genome?.architecture || 'Synthesizing architectural signals...'}"
+          </div>
+          
+          <div className="flex items-center justify-between px-2">
+            <span className="text-[10px] font-black uppercase tracking-widest text-white/20">Analysis Confidence</span>
+            <span className="text-[10px] font-black text-accent-blue">{(genome?.confidence || 0) * 100}%</span>
+          </div>
+          <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+             <motion.div 
+              initial={{ width: 0 }}
+              animate={{ width: `${(genome?.confidence || 0) * 100}%` }}
+              className="h-full bg-accent-blue shadow-[0_0_10px_rgba(0,112,243,0.5)]"
+             />
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          {metrics.map((m, i) => (
+            <div key={i} className="group">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-black uppercase tracking-widest text-white/40 group-hover:text-white transition-colors">{m.label}</span>
+                <span className={`text-xs font-black ${m.color}`}>{m.score || 0}%</span>
+              </div>
+              <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden mb-3">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${m.score || 0}%` }}
+                  className={`h-full ${m.color.replace('text', 'bg')} shadow-lg`}
+                />
+              </div>
+              <p className="text-[10px] text-white/30 leading-relaxed font-medium group-hover:text-white/50 transition-colors">
+                {m.reasoning || 'Calibrating neural nodes...'}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {genome?.key_files && (
+          <div className="mt-8 pt-8 border-t border-white/5">
+            <span className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-4 block">Influential Signals</span>
+            <div className="space-y-2">
+              {genome.key_files.map((file, i) => (
+                <div key={i} className="flex items-center gap-2 text-[10px] font-mono text-white/40 hover:text-accent-blue cursor-pointer transition-colors">
+                  <FileCode size={12} />
+                  <span className="truncate">{file}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
 // --- Main Component ---
 
 const CodeSearchPage = () => {
@@ -274,6 +366,14 @@ const CodeSearchPage = () => {
   const [loadingRepos, setLoadingRepos] = useState(false);
   const [repoInsight, setRepoInsight] = useState(null);
   const [isSummarizing, setIsSummarizing] = useState(false);
+  const [repoGenome, setRepoGenome] = useState(null);
+  const [isLoadingGenome, setIsLoadingGenome] = useState(false);
+  
+  // NEW: Ephemeral Mode State
+  const [searchMode, setSearchMode] = useState('persistent'); // 'persistent' | 'ephemeral'
+  const [ephemeralSessionId, setEphemeralSessionId] = useState(null);
+  const [isSearchUnlocked, setIsSearchUnlocked] = useState(false);
+  
   const searchInputRef = React.useRef(null);
 
   const debouncedQuery = useDebounce(query, 500);
@@ -346,9 +446,15 @@ const CodeSearchPage = () => {
           if (response.data.description) {
             setRepoInsight(response.data.description);
           }
+
+          // Fetch Intelligence (Genome)
+          setIsLoadingGenome(true);
+          const intelResponse = await getRepoIntelligence(owner, repo);
+          setRepoGenome(intelResponse.data.genome);
+          setIsLoadingGenome(false);
+
         } catch (err) {
           console.warn('Repo metadata sync failed:', err.message);
-          // Fallback to basic info if not in our DB yet
           setActiveRepo({ owner, repo, isIndexed: false });
         }
       }
@@ -356,6 +462,22 @@ const CodeSearchPage = () => {
     
     syncRepoStatus();
   }, [searchParams]);
+
+  // NEW: Real-time Intelligence Polling during indexing
+  useEffect(() => {
+    let interval;
+    if (isIndexing && activeRepo) {
+      interval = setInterval(async () => {
+        try {
+          const res = await getRepoIntelligence(activeRepo.owner, activeRepo.repo);
+          if (res.data.genome) {
+            setRepoGenome(res.data.genome);
+          }
+        } catch (e) {}
+      }, 5000);
+    }
+    return () => clearInterval(interval);
+  }, [isIndexing, activeRepo]);
   
   // NEW: Fetch all indexed repos to show status
   useEffect(() => {
@@ -384,11 +506,16 @@ const CodeSearchPage = () => {
     if (!searchQuery) return;
     setLoading(true);
     try {
-      const response = await searchCode(searchQuery, activeRepo?.repo, activeRepo?.owner);
+      const response = await searchCode(
+        searchQuery, 
+        activeRepo?.repo, 
+        activeRepo?.owner,
+        ephemeralSessionId
+      );
       
       // Senior Dev Safety Filter: Ensure backend results match our active workspace
       let filteredResults = response.data;
-      if (activeRepo) {
+      if (activeRepo && !ephemeralSessionId) {
         filteredResults = response.data.filter(file => 
           file.repo.toLowerCase() === activeRepo.repo.toLowerCase()
         );
@@ -412,11 +539,16 @@ const CodeSearchPage = () => {
       setLoading(true);
       try {
         const target = activeRepo || previewRepo;
-        const response = await searchCode(debouncedQuery, target?.repo, target?.owner);
+        const response = await searchCode(
+          debouncedQuery, 
+          target?.repo, 
+          target?.owner,
+          ephemeralSessionId
+        );
         
         // Senior Dev Safety Filter: Ensure results strictly match workspace
         let filteredResults = response.data;
-        if (target) {
+        if (target && !ephemeralSessionId) {
           filteredResults = response.data.filter(file => 
             file.repo.toLowerCase() === target.repo.toLowerCase()
           );
@@ -509,64 +641,60 @@ const CodeSearchPage = () => {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const pollIndexStatus = async (jobId, owner, repo) => {
+  const pollIndexStatus = async (jobId, owner, repo, isEphemeral = false) => {
     const interval = setInterval(async () => {
       try {
+        // If ephemeral, we can poll both job and session status
         const response = await getIndexStatus(jobId);
         const { state, progress, result, failedReason } = response.data;
         
         setIndexProgress(progress || 0);
 
+        if (isEphemeral) {
+          try {
+            const sessId = `${owner.toLowerCase()}:${repo.toLowerCase()}`;
+            const { getEphemeralStatus } = await import('../services/api');
+            const sessStatus = await getEphemeralStatus(sessId);
+            
+            if (sessStatus.data.isSearchReady === 'true' && !isSearchUnlocked) {
+              setIsSearchUnlocked(true);
+              setIndexStatus({ type: 'success', message: 'DIRECT SEARCH UNLOCKED: You can start searching now!' });
+            }
+          } catch (e) {}
+        }
+
         if (state === 'completed') {
           clearInterval(interval);
           setIndexProgress(100);
           setTimeout(() => {
-            const count = result?.filesIndexed || 0;
-            setIndexStatus({ type: 'success', message: `Neural Link Established! Indexed ${result?.filesIndexed || 0} files.` });
+            setIndexStatus({ type: 'success', message: `${isEphemeral ? 'Transient Indexing' : 'Neural Link'} Established!` });
             
-            // Lock the workspace and mark as indexed
-            setActiveRepo({ owner, repo, isIndexed: true });
+            setActiveRepo({ owner, repo, isIndexed: true, isEphemeral });
             setIsIndexing(false);
-            setRepoUrl('');
+            if (!isEphemeral) setRepoUrl('');
             setShowSuccess(true);
             
-            // Update URL to persist workspace context
-            setSearchParams({ owner, repo });
+            setSearchParams({ owner, repo, mode: isEphemeral ? 'ephemeral' : 'persistent' });
             
-            // SENIOR DEV AUTO-REFRESH: Instantly search the new workspace
             setTimeout(() => {
-              if (query) {
-                handleSearch(query);
-              } else {
-                searchInputRef.current?.focus();
-              }
+              if (query) handleSearch(query);
+              else searchInputRef.current?.focus();
             }, 500);
           }, 1000);
         } else if (state === 'failed' || state === 'error') {
           clearInterval(interval);
-          const errorMsg = failedReason || 'GitHub Access Denied or Empty Repo';
           setIndexStatus({ 
             type: 'error', 
-            message: `CRITICAL ERROR: ${errorMsg}. Please verify your GITHUB_TOKEN on Render.` 
+            message: `CRITICAL ERROR: ${failedReason || 'Failed'}` 
           });
-          // Note: Modal stays open for error review
         } else {
           const count = result?.filesIndexed || 0;
-          let msg = `Indexing... (${count} files indexed)`;
-          if (progress < 20) msg = `Initializing deep scan sequence... (${count} files)`;
-          else if (progress < 40) msg = `Cloning neural file tree... (${count} files)`;
-          else if (progress < 60) msg = `Analyzing code semantics... (${count} files)`;
-          else if (progress < 80) msg = `Optimizing search vectors... (${count} files)`;
-          else msg = `Finalizing neural link... (${count} files)`;
-          
-          setIndexStatus({ type: 'info', message: msg });
+          setIndexStatus({ type: 'info', message: `Syncing ${isEphemeral ? 'Transient' : 'Neural'} Nodes... (${count} files)` });
         }
       } catch (err) {
         console.error('Polling error:', err);
-        if (err.response?.status === 404) {
-          clearInterval(interval);
-          setIsIndexing(false);
-        }
+        clearInterval(interval);
+        setIsIndexing(false);
       }
     }, 2000);
     
@@ -619,10 +747,16 @@ const CodeSearchPage = () => {
         repo = parts[1];
       }
 
-      const response = await indexRepo(owner, repo);
-      const { jobId, cached } = response.data;
+      const isEphemeral = searchMode === 'ephemeral';
+      const response = await indexRepo(owner, repo, searchMode);
+      const { jobId, cached, sessionId } = response.data;
 
-      if (cached) {
+      if (isEphemeral) {
+        setEphemeralSessionId(sessionId);
+        setIsSearchUnlocked(false);
+      }
+
+      if (cached && !isEphemeral) {
         setIndexStatus({ type: 'success', message: 'Neural Link Cached!' });
         setActiveRepo({ owner, repo, isIndexed: true });
         setSearchParams({ owner, repo }); // Persist workspace
@@ -630,7 +764,7 @@ const CodeSearchPage = () => {
         setRepoUrl('');
         if (query) handleSearch(query);
       } else {
-        pollIndexStatus(jobId, owner, repo);
+        pollIndexStatus(jobId, owner, repo, isEphemeral);
       }
     } catch (error) {
       setIndexStatus({ 
@@ -873,9 +1007,27 @@ const CodeSearchPage = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.9 }}
-                  className="mt-8 flex flex-col items-center gap-6 relative z-30"
+                  className="mt-8 flex flex-col items-center gap-4 relative z-30"
                 >
-                  <div className="flex items-center glass-dark rounded-3xl pl-5 pr-2 py-2 border-white/10 min-w-[340px] md:min-w-[450px] focus-within:border-accent-blue/40 transition-all shadow-2xl relative z-40 group">
+                  {/* Mode Toggle */}
+                  <div className="flex items-center gap-2 p-1 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-md">
+                    <button 
+                      onClick={() => setSearchMode('persistent')}
+                      className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 ${searchMode === 'persistent' ? 'bg-accent-blue text-white shadow-[0_0_20px_rgba(0,112,243,0.3)]' : 'text-white/30 hover:text-white/60'}`}
+                    >
+                      <Database size={12} />
+                      Permanent Index
+                    </button>
+                    <button 
+                      onClick={() => setSearchMode('ephemeral')}
+                      className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 ${searchMode === 'ephemeral' ? 'bg-accent-purple text-white shadow-[0_0_20px_rgba(147,51,234,0.3)]' : 'text-white/30 hover:text-white/60'}`}
+                    >
+                      <Zap size={12} />
+                      Direct Search
+                    </button>
+                  </div>
+
+                  <div className={`flex items-center glass-dark rounded-3xl pl-5 pr-2 py-2 border-white/10 min-w-[340px] md:min-w-[450px] focus-within:border-${searchMode === 'ephemeral' ? 'accent-purple' : 'accent-blue'}/40 transition-all shadow-2xl relative z-40 group`}>
                     <Globe className="text-white/30 group-focus-within:text-accent-blue transition-colors w-4 h-4 shrink-0" />
                     <input
                       id="index-input"
@@ -896,11 +1048,17 @@ const CodeSearchPage = () => {
                     )}
                     <button 
                       onClick={handleIndexRepo}
-                      className="bg-accent-blue hover:bg-accent-blue/80 text-white text-[10px] font-black py-2.5 px-6 rounded-2xl transition-all uppercase tracking-widest shadow-lg active:scale-95 border border-white/10 shadow-accent-blue/20"
+                      className={`${searchMode === 'ephemeral' ? 'bg-accent-purple' : 'bg-accent-blue'} hover:opacity-80 text-white text-[10px] font-black py-2.5 px-6 rounded-2xl transition-all uppercase tracking-widest shadow-lg active:scale-95 border border-white/10`}
                     >
-                      Index Now
+                      {searchMode === 'ephemeral' ? 'Direct Search' : 'Index Now'}
                     </button>
                   </div>
+                  
+                  {searchMode === 'ephemeral' && (
+                    <p className="text-[9px] font-bold text-white/20 uppercase tracking-[0.2em] animate-pulse">
+                      Zero-Persistence Mode: Session data auto-destroys in 1hr
+                    </p>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -985,6 +1143,20 @@ const CodeSearchPage = () => {
               </motion.div>
             )}
           </motion.div>
+          
+          {/* Intelligence Panel Triggered for Active Repo */}
+          {activeRepo && (
+             <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-20 grid grid-cols-1 lg:grid-cols-3 gap-12"
+             >
+                <div className="lg:col-span-2 space-y-12">
+                   {/* This was where the search bar section ended */}
+                </div>
+                <IntelligencePanel genome={repoGenome} isLoading={isLoadingGenome} />
+             </motion.div>
+          )}
         </section>
 
         <AnimatePresence mode="wait">
@@ -1022,8 +1194,10 @@ const CodeSearchPage = () => {
                     {results.length} Contextual Matches
                   </h2>
                   <div className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-white/2 border border-white/5 backdrop-blur-md">
-                     <Database size={12} className="text-accent-blue" />
-                     <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">SAM Indexing Engine</span>
+                     <Database size={12} className={ephemeralSessionId ? "text-accent-purple" : "text-accent-blue"} />
+                     <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">
+                       {ephemeralSessionId ? "Ephemeral Session Active" : "SAM Indexing Engine"}
+                     </span>
                   </div>
                </div>
 
