@@ -722,6 +722,16 @@ const CodeSearchPage = () => {
             if (sessStatus.data.isSearchReady === 'true' && !isSearchUnlocked) {
               setIsSearchUnlocked(true);
               setIndexStatus({ type: 'success', message: 'DIRECT SEARCH UNLOCKED: You can start searching now!' });
+              
+              // NEW: Save to Direct History immediately on Unlock (Senior Dev UX)
+              const savedDirect = JSON.parse(localStorage.getItem('direct_repo_history') || '[]');
+              const newEntry = { owner, name: repo, isEphemeral: true, lastAccessed: new Date().toISOString() };
+              const updatedHistory = [
+                newEntry,
+                ...savedDirect.filter(r => !(r.owner === owner && r.name === repo))
+              ].slice(0, 10);
+              localStorage.setItem('direct_repo_history', JSON.stringify(updatedHistory));
+              setDirectRepos(updatedHistory);
             }
           } catch (e) {}
         }
