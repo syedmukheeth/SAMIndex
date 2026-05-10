@@ -1468,6 +1468,9 @@ const CodeSearchPage = () => {
         onClose={() => setIsHistoryOpen(false)}
         onSelectSearch={(item) => {
           setQuery(item.query);
+          const mode = item.isEphemeral ? 'ephemeral' : 'persistent';
+          setSearchMode(mode);
+          
           if (item.repo && item.owner) {
             setActiveRepo({ 
               owner: item.owner, 
@@ -1475,16 +1478,25 @@ const CodeSearchPage = () => {
               isIndexed: true,
               isEphemeral: item.isEphemeral
             });
+            
+            if (item.isEphemeral) {
+              setEphemeralSessionId(`${item.owner.toLowerCase()}:${item.repo.toLowerCase()}`);
+            } else {
+              setEphemeralSessionId(null);
+            }
+
             setSearchParams({ 
               owner: item.owner, 
               repo: item.repo,
-              mode: item.isEphemeral ? 'ephemeral' : 'persistent',
+              mode: mode,
               sid: item.isEphemeral ? `${item.owner.toLowerCase()}:${item.repo.toLowerCase()}` : undefined
             });
           } else {
             setActiveRepo(null);
-            setSearchParams({});
+            setEphemeralSessionId(null);
+            setSearchParams({ mode });
           }
+          setIsHistoryOpen(false);
         }}
       />
 

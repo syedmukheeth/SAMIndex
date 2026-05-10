@@ -94,16 +94,7 @@ const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
               {repoName}
             </h3>
           </div>
-          {isEphemeral && (
-            <span className="text-[8px] font-black bg-accent-cyan/10 text-accent-cyan px-2 py-0.5 rounded-full border border-accent-cyan/20">
-              DIRECT
-            </span>
-          )}
-          {isGlobal && (
-            <span className="text-[8px] font-black bg-accent-purple/10 text-accent-purple px-2 py-0.5 rounded-full border border-accent-purple/20">
-              GLOBAL
-            </span>
-          )}
+          {/* Badges removed for minimalist color-driven UX */}
         </div>
         <div className="grid gap-2">
           {items.map((item) => (
@@ -223,12 +214,6 @@ const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
                   {/* Neural Stream (Direct Search) */}
                   {Object.keys(direct).length > 0 && (
                     <div className="space-y-6">
-                       <div className="flex items-center gap-3 px-2">
-                          <div className="p-1.5 rounded-lg bg-accent-cyan/10 text-accent-cyan">
-                            <Zap size={14} className="animate-pulse" />
-                          </div>
-                          <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-accent-cyan">Direct Search</h4>
-                       </div>
                        <div className="space-y-6">
                           {Object.entries(direct).map(([repoName, items]) => renderHistoryGroup(repoName, items, 'direct'))}
                        </div>
@@ -238,12 +223,6 @@ const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
                   {/* Global Search (Purple) */}
                   {Object.keys(global).length > 0 && (
                     <div className="space-y-6">
-                       <div className="flex items-center gap-3 px-2">
-                          <div className="p-1.5 rounded-lg bg-accent-purple/10 text-accent-purple">
-                            <Globe size={14} />
-                          </div>
-                          <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-accent-purple">Global Search</h4>
-                       </div>
                        <div className="space-y-6">
                           {Object.entries(global).map(([repoName, items]) => renderHistoryGroup(repoName, items, 'global'))}
                        </div>
@@ -253,17 +232,12 @@ const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
                   {/* Knowledge Vault (Permanent Search) */}
                   {Object.keys(permanent).length > 0 && (
                     <div className="space-y-6">
-                       <div className="flex items-center gap-3 px-2">
-                          <div className="p-1.5 rounded-lg bg-accent-blue/5 text-accent-blue/40">
-                             <Database size={14} />
-                           </div>
-                           <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-accent-blue/40">Permanent Search</h4>
-                       </div>
                        <div className="space-y-6">
                           {Object.entries(permanent).map(([repoName, items]) => renderHistoryGroup(repoName, items, 'permanent'))}
                        </div>
                     </div>
                   )}
+}
                 </div>
               )}
             </div>
