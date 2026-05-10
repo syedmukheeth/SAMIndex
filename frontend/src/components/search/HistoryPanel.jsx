@@ -64,15 +64,20 @@ const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
       }, {});
     };
 
+    const directIds = new Set(direct.map(i => i.id));
+    const globalIds = new Set(global.map(i => i.id));
+
     return {
       recent: history.slice(0, 5),
       direct: groupByRepo(direct),
       global: groupByRepo(global),
-      permanent: groupByRepo(permanent)
+      permanent: groupByRepo(permanent),
+      directIds,
+      globalIds
     };
   };
 
-  const { recent, direct, global, permanent } = categorizeHistory();
+  const { recent, direct, global, permanent, directIds, globalIds } = categorizeHistory();
 
   const renderHistoryGroup = (repoName, items, type = 'permanent') => {
     const isEphemeral = type === 'direct';
@@ -212,44 +217,53 @@ const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
                 </div>
               ) : (
                 <div className="space-y-12">
-                  {/* Recent Intelligence (Unified Stream) */}
+                  {/* Recent Search (Unified Stream) */}
                   {recent.length > 0 && (
                     <div className="space-y-4">
                        <div className="flex items-center gap-3 px-2">
                           <div className="p-1.5 rounded-lg bg-white/5 text-white/40">
                              <Clock size={14} />
                            </div>
-                           <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20">Recent Intelligence</h4>
+                           <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20">Recent Search</h4>
                        </div>
                        <div className="grid gap-2">
-                          {recent.map((item) => (
-                            <button
-                              key={`recent-${item.id}`}
-                              onClick={() => onSelectSearch(item)}
-                              className="group w-full p-4 glass-dark rounded-2xl border border-white/5 hover:border-white/10 transition-all text-left flex items-center justify-between"
-                            >
-                              <div className="flex items-center gap-4 min-w-0">
-                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
-                                  item.isEphemeral ? 'bg-accent-cyan/10 text-accent-cyan group-hover:bg-accent-cyan/20' : 
-                                  (item.repo === 'Global' || !item.repo) ? 'bg-accent-purple/10 text-accent-purple group-hover:bg-accent-purple/20' : 
-                                  'bg-accent-blue/10 text-accent-blue group-hover:bg-accent-blue/20'
-                                }`}>
-                                  <Search size={14} />
+                          {recent.map((item) => {
+                            const isDirect = directIds.has(item.id);
+                            const isGlobal = globalIds.has(item.id);
+                            const colorClass = isDirect
+                              ? 'bg-accent-cyan/10 text-accent-cyan group-hover:bg-accent-cyan/20 border-accent-cyan/10'
+                              : isGlobal
+                              ? 'bg-accent-purple/10 text-accent-purple group-hover:bg-accent-purple/20 border-accent-purple/10'
+                              : 'bg-accent-blue/10 text-accent-blue group-hover:bg-accent-blue/20 border-accent-blue/10';
+                            return (
+                              <button
+                                key={`recent-${item.id}`}
+                                onClick={() => onSelectSearch(item)}
+                                className={`group w-full p-4 glass-dark rounded-2xl border transition-all text-left flex items-center justify-between ${
+                                  isDirect ? 'border-accent-cyan/10 hover:border-accent-cyan/20' :
+                                  isGlobal ? 'border-accent-purple/10 hover:border-accent-purple/20' :
+                                  'border-white/5 hover:border-accent-blue/20'
+                                }`}
+                              >
+                                <div className="flex items-center gap-4 min-w-0">
+                                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${colorClass}`}>
+                                    <Search size={14} />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-bold truncate group-hover:text-white transition-colors">
+                                      {item.query}
+                                    </p>
+                                    <p className="text-[10px] text-white/20 font-medium">
+                                      {item.repo && item.owner ? `${item.owner}/${item.repo}` : 'Global'}
+                                    </p>
+                                  </div>
                                 </div>
-                                <div className="min-w-0">
-                                  <p className="text-sm font-bold truncate group-hover:text-white transition-colors">
-                                    {item.query}
-                                  </p>
-                                  <p className="text-[10px] text-white/20 font-medium">
-                                    {item.repo && item.owner ? `${item.owner}/${item.repo}` : 'Global Intelligence'}
-                                  </p>
-                                </div>
-                              </div>
-                              <span className="text-[9px] text-white/10 font-medium group-hover:text-white/30 transition-colors">
-                                {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                            </button>
-                          ))}
+                                <span className="text-[9px] text-white/10 font-medium group-hover:text-white/30 transition-colors">
+                                  {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </button>
+                            );
+                          })}
                        </div>
                        <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent mt-8" />
                     </div>
