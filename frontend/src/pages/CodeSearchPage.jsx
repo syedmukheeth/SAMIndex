@@ -1160,80 +1160,120 @@ const CodeSearchPage = () => {
                     <ArrowLeft size={12} className="rotate-180 group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div className="space-y-12">
                   {loadingRepos ? (
-                    [1, 2, 3].map(i => <div key={i} className="h-24 glass-dark rounded-3xl border border-white/5 animate-pulse" />)
-                  ) : [...directRepos, ...indexedRepos].length > 0 ? (
-                    [...directRepos, ...indexedRepos].map(repo => {
-                      const isDir = repo.isEphemeral;
-                      return (
-                        <motion.button
-                          key={isDir ? `dir-${repo.owner}-${repo.name}` : repo.githubId}
-                          whileHover={{ scale: 1.02, borderColor: isDir ? 'rgba(0,242,255,0.3)' : 'rgba(47,129,247,0.3)' }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => {
-                            if (isDir) {
-                              setSearchMode('ephemeral');
-                              setRepoUrl(`${repo.owner}/${repo.name}`);
-                              // Auto-trigger indexing if it's direct search
-                              handleIndexRepo();
-                            } else {
-                              setSearchMode('persistent');
-                              setActiveRepo({ owner: repo.owner, repo: repo.name, isIndexed: true });
-                              setSearchParams({ owner: repo.owner, repo: repo.name });
-                              searchInputRef.current?.focus();
-                            }
-                          }}
-                          className={`flex items-center gap-4 p-4 glass-dark rounded-3xl border border-white/5 text-left group transition-all relative overflow-hidden`}
-                        >
-                          {/* Background Glow for Direct */}
-                          {isDir && <div className="absolute inset-0 bg-accent-cyan/5 opacity-0 group-hover:opacity-100 transition-opacity" />}
-                          
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isDir ? 'bg-accent-cyan/10 text-accent-cyan group-hover:bg-accent-cyan/20' : 'bg-accent-blue/10 text-accent-blue group-hover:bg-accent-blue/20'}`}>
-                            {isDir ? <Zap size={18} /> : <Book size={18} />}
-                          </div>
-                          <div className="flex-1 min-w-0 relative z-10">
-                            <div className="flex items-center gap-2">
-                              <p className="text-sm font-bold truncate">{repo.name}</p>
-                              {isDir && <span className="text-[7px] font-black px-1.5 py-0.5 rounded-full bg-accent-cyan/20 text-accent-cyan uppercase tracking-tighter">Direct</span>}
-                            </div>
-                            <p className="text-[10px] text-white/30 truncate">{repo.owner}</p>
-                          </div>
-                          <div className={`w-1.5 h-1.5 rounded-full shadow-lg ${isDir ? 'bg-accent-cyan shadow-accent-cyan/50' : 'bg-emerald-400 shadow-emerald-400/50'}`}></div>
-                        </motion.button>
-                      );
-                    })
-                  ) : (
-                    <div className="col-span-full py-12 text-center glass-dark rounded-[2.5rem] border border-white/5 border-dashed">
-                      <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Database size={20} className="text-white/20" />
-                      </div>
-                      <h4 className="text-sm font-bold mb-2">Repository History Empty</h4>
-                      <p className="text-[10px] text-white/30 max-w-[200px] mx-auto leading-relaxed mb-6">
-                        No repositories indexed yet. You can restore your previously indexed repos below.
-                      </p>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={async () => {
-                          try {
-                            setLoadingRepos(true);
-                            await import('../services/api').then(m => m.claimOrphans());
-                            window.location.reload();
-                          } catch (err) {
-                            console.error('Migration failed:', err);
-                          } finally {
-                            setLoadingRepos(false);
-                          }
-                        }}
-                        className="px-6 py-2.5 rounded-2xl bg-accent-blue/10 border border-accent-blue/30 text-accent-blue text-[10px] font-black uppercase tracking-widest hover:bg-accent-blue hover:text-white transition-all shadow-[0_0_20px_rgba(59,130,246,0.1)]"
-                      >
-                        Restore My Repos
-                      </motion.button>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {[1, 2, 3].map(i => <div key={i} className="h-24 glass-dark rounded-3xl border border-white/5 animate-pulse" />)}
                     </div>
+                  ) : (
+                    <>
+                      {/* Section 1: Neural Stream (Direct) */}
+                      {directRepos.length > 0 && (
+                        <div className="space-y-6">
+                          <div className="flex items-center gap-3 px-2">
+                             <div className="p-1.5 rounded-lg bg-accent-cyan/10 text-accent-cyan">
+                               <Zap size={14} className="animate-pulse" />
+                             </div>
+                             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-accent-cyan/60">Neural Stream (Ephemeral Sessions)</h4>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {directRepos.map(repo => (
+                              <motion.button
+                                key={`dir-${repo.owner}-${repo.name}`}
+                                whileHover={{ scale: 1.02, borderColor: 'rgba(0,242,255,0.3)' }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => {
+                                  setSearchMode('ephemeral');
+                                  setRepoUrl(`${repo.owner}/${repo.name}`);
+                                  handleIndexRepo();
+                                }}
+                                className="flex items-center gap-4 p-4 glass-dark rounded-3xl border border-white/5 text-left group transition-all relative overflow-hidden"
+                              >
+                                <div className="absolute inset-0 bg-accent-cyan/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-accent-cyan/10 text-accent-cyan group-hover:bg-accent-cyan/20 transition-colors">
+                                  <Zap size={18} />
+                                </div>
+                                <div className="flex-1 min-w-0 relative z-10">
+                                  <p className="text-sm font-bold truncate">{repo.name}</p>
+                                  <p className="text-[10px] text-white/30 truncate">{repo.owner}</p>
+                                </div>
+                                <div className="w-1.5 h-1.5 rounded-full bg-accent-cyan shadow-[0_0_10px_rgba(0,242,255,0.5)]"></div>
+                              </motion.button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Section 2: Knowledge Vault (Permanent) */}
+                      {indexedRepos.length > 0 && (
+                        <div className="space-y-6">
+                          <div className="flex items-center gap-3 px-2">
+                             <div className="p-1.5 rounded-lg bg-accent-blue/10 text-accent-blue">
+                               <Database size={14} />
+                             </div>
+                             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-accent-blue/60">Knowledge Vault (Permanent Index)</h4>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {indexedRepos.map(repo => (
+                              <motion.button
+                                key={repo.githubId}
+                                whileHover={{ scale: 1.02, borderColor: 'rgba(47,129,247,0.3)' }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => {
+                                  setSearchMode('persistent');
+                                  setActiveRepo({ owner: repo.owner, repo: repo.name, isIndexed: true });
+                                  setSearchParams({ owner: repo.owner, repo: repo.name });
+                                  searchInputRef.current?.focus();
+                                }}
+                                className="flex items-center gap-4 p-4 glass-dark rounded-3xl border border-white/5 text-left group transition-all relative overflow-hidden"
+                              >
+                                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-accent-blue/10 text-accent-blue group-hover:bg-accent-blue/20 transition-colors">
+                                  <Book size={18} />
+                                </div>
+                                <div className="flex-1 min-w-0 relative z-10">
+                                  <p className="text-sm font-bold truncate">{repo.name}</p>
+                                  <p className="text-[10px] text-white/30 truncate">{repo.owner}</p>
+                                </div>
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.5)]"></div>
+                              </motion.button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {directRepos.length === 0 && indexedRepos.length === 0 && (
+                        <div className="col-span-full py-12 text-center glass-dark rounded-[2.5rem] border border-white/5 border-dashed">
+                          <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Database size={20} className="text-white/20" />
+                          </div>
+                          <h4 className="text-sm font-bold mb-2">Repository History Empty</h4>
+                          <p className="text-[10px] text-white/30 max-w-[200px] mx-auto leading-relaxed mb-6">
+                            No repositories indexed yet. You can restore your previously indexed repos below.
+                          </p>
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={async () => {
+                              try {
+                                setLoadingRepos(true);
+                                await import('../services/api').then(m => m.claimOrphans());
+                                window.location.reload();
+                              } catch (err) {
+                                console.error('Migration failed:', err);
+                              } finally {
+                                setLoadingRepos(false);
+                              }
+                            }}
+                            className="px-6 py-2.5 rounded-2xl bg-accent-blue/10 border border-accent-blue/30 text-accent-blue text-[10px] font-black uppercase tracking-widest hover:bg-accent-blue hover:text-white transition-all shadow-[0_0_20px_rgba(59,130,246,0.1)]"
+                          >
+                            Restore My Repos
+                          </motion.button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
+ </div>
               </motion.div>
             )}
           </motion.div>
