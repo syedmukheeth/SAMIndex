@@ -1209,7 +1209,7 @@ const CodeSearchPage = () => {
                              <div className="p-1.5 rounded-lg bg-accent-cyan/10 text-accent-cyan">
                                <Zap size={14} className="animate-pulse" />
                              </div>
-                             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-accent-cyan/60">Neural Stream (Ephemeral Sessions)</h4>
+                             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-accent-cyan">Direct Search</h4>
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {directRepos.map(repo => (
@@ -1246,7 +1246,7 @@ const CodeSearchPage = () => {
                              <div className="p-1.5 rounded-lg bg-accent-blue/10 text-accent-blue">
                                <Database size={14} />
                              </div>
-                             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-accent-blue/60">Knowledge Vault (Permanent Index)</h4>
+                             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-accent-blue">Permanent Search</h4>
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {indexedRepos.map(repo => (
