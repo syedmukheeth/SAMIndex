@@ -1,13 +1,9 @@
 const Redis = require('ioredis');
 
-const redisConfig = {
-  host: process.env.REDIS_HOST || '127.0.0.1',
-  port: process.env.REDIS_PORT || 6379,
-  password: process.env.REDIS_PASSWORD || undefined,
-  tls: process.env.REDIS_TLS === 'true' ? {} : undefined,
+const redisOptions = {
   maxRetriesPerRequest: null, // Required for BullMQ
+  tls: process.env.REDIS_TLS === 'true' ? {} : undefined,
   retryStrategy: (times) => {
-    // Retry up to 50 times with exponential backoff
     if (times > 50) {
       console.error('[Redis] Max retries exceeded. Manual intervention required.');
       return null;
@@ -17,15 +13,19 @@ const redisConfig = {
   },
   reconnectOnError: (err) => {
     const targetError = 'READONLY';
-    if (err.message.includes(targetError)) {
-      // Only reconnect when the error contains "READONLY"
-      return true;
-    }
+    if (err.message.includes(targetError)) return true;
     return false;
   }
 };
 
-const connection = new Redis(redisConfig);
+const connection = process.env.REDIS_URL 
+  ? new Redis(process.env.REDIS_URL, redisOptions)
+  : new Redis({
+      host: process.env.REDIS_HOST || '127.0.0.1',
+      port: process.env.REDIS_PORT || 6379,
+      password: process.env.REDIS_PASSWORD || undefined,
+      ...redisOptions
+    });
 
 let isConnected = false;
 
@@ -36,7 +36,8 @@ connection.on('error', (err) => {
 
 connection.on('connect', () => {
   isConnected = true;
-  console.log(`[Redis] Connected to ${redisConfig.host}:${redisConfig.port}`);
+  const target = process.env.REDIS_URL ? 'Cloud' : `${process.env.REDIS_HOST || '127.0.0.1'}:${process.env.REDIS_PORT || 6379}`;
+  console.log(`[Redis] Connected to ${target}`);
 });
 
 connection.on('ready', () => {
