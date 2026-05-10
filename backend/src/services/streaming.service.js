@@ -133,6 +133,10 @@ class StreamingIngestionService {
               },
               { upsert: true }
             );
+          } else {
+            // NEW: Ensure ephemeral search is unlocked on finish
+            const ephemeralService = require('./ephemeral.service');
+            await ephemeralService.finalizeSession(`${owner.toLowerCase()}:${repo.toLowerCase()}`);
           }
 
           resolve({

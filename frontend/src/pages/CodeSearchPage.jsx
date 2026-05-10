@@ -757,7 +757,7 @@ const CodeSearchPage = () => {
           clearInterval(interval);
           setIndexStatus({ 
             type: 'error', 
-            message: `CRITICAL ERROR: ${failedReason || 'Failed'}` 
+            message: `the indexing of this repo not happen man (${failedReason || 'Connection Failed'})` 
           });
         } else {
           const count = result?.filesIndexed || 0;
@@ -812,7 +812,9 @@ const CodeSearchPage = () => {
         const parts = path.split('/').filter(Boolean);
         
         if (parts.length < 2) {
-          throw new Error('Invalid URL. Use format: owner/repo');
+          setIndexStatus({ type: 'error', message: 'the indexing of this repo not happen man (Invalid URL format)' });
+          setTimeout(() => setIsIndexing(false), 3000);
+          return;
         }
 
         owner = parts[0];

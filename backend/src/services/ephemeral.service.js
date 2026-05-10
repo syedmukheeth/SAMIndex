@@ -60,11 +60,22 @@ class EphemeralSearchService {
     
     await pipeline.exec();
     
-    // Trigger Search Unlock if enough files are present
+    // Trigger Search Unlock if enough files are present (Early unlock)
     const count = await redis.hget(metaKey, 'filesCount');
-    if (parseInt(count) === 15) {
+    if (parseInt(count) >= 15) {
       await redis.hset(metaKey, 'isSearchReady', 'true');
     }
+  }
+
+  /**
+   * Finalizes the session, ensuring search is unlocked
+   */
+  async finalizeSession(sessionId) {
+    const metaKey = `${this.prefix}:meta:${sessionId}`;
+    await redis.hset(metaKey, {
+      status: 'completed',
+      isSearchReady: 'true'
+    });
   }
 
   /**
