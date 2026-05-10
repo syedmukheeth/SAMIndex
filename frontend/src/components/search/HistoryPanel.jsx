@@ -155,11 +155,6 @@ const HistoryPanel = ({ onSelectSearch, isOpen, onClose }) => {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2 mb-1">
                   <p className="text-white font-bold text-sm truncate">{item.query}</p>
-                  {isEphemeral && (
-                    <span className="shrink-0 text-[7px] font-black bg-accent-cyan/20 text-accent-cyan px-1.5 py-0.5 rounded uppercase tracking-tighter border border-accent-cyan/30">
-                      Neural Link
-                    </span>
-                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock size={12} className="text-white/20" />
