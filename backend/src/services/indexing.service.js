@@ -25,8 +25,10 @@ const processIndexing = async (data, job = null) => {
 
     if (job) await job.updateProgress(5);
 
-    // 2. Obtain ZIP Stream from GitHub
+    // 2. Obtain ZIP Stream and Branch from GitHub
     console.log(`[IndexingService] Requesting ZIP stream for ${owner}/${repo}...`);
+    const repoDetails = await githubService.getRepoDetails(owner, repo);
+    const defaultBranch = repoDetails.default_branch || 'main';
     const zipStream = await githubService.getRepoZipStream(owner, repo);
     
     if (job) await job.updateProgress(10);
@@ -35,7 +37,7 @@ const processIndexing = async (data, job = null) => {
     const result = await streamingService.processStream(owner, repo, zipStream, job || { 
       updateProgress: (p) => cache.set(`job:${jobId}`, { state: 'active', progress: p }, 3600),
       log: (msg) => console.log(`[JobLog] ${msg}`)
-    }, id, isEphemeral);
+    }, id, isEphemeral, defaultBranch);
 
     // 4. Cleanup Old Session Files (Pruning) - SKIP FOR EPHEMERAL
     if (!isEphemeral) {

@@ -32,6 +32,10 @@ const codeFileSchema = new mongoose.Schema(
       type: String,
       index: true,
     },
+    branch: {
+      type: String,
+      default: 'main',
+    },
   },
   {
     timestamps: true,

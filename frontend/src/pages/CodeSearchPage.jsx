@@ -15,8 +15,8 @@ import { useSearchParams, Link } from 'react-router-dom';
 import Skeleton from '../components/ui/Skeleton';
 import HistoryPanel from '../components/search/HistoryPanel';
 
-const openGitHub = (owner, repo, path) => {
-  window.open(`https://github.com/${owner}/${repo}/blob/main/${path}`, '_blank');
+const openGitHub = (owner, repo, path, branch = 'main') => {
+  window.open(`https://github.com/${owner}/${repo}/blob/${branch}/${path}`, '_blank');
 };
 
 const HighlightText = ({ text, highlight }) => {
@@ -57,8 +57,8 @@ const ResultCard = ({ result, idx, copiedId, handleCopy, query }) => {
   const [explanation, setExplanation] = useState(null);
   const [isExplaining, setIsExplaining] = useState(false);
 
-  const openGitHub = (owner, repo, path, line) => {
-    window.open(`https://github.com/${owner}/${repo}/blob/main/${path}${line ? `#L${line}` : ''}`, '_blank');
+  const openGitHub = (owner, repo, path, line, branch = 'main') => {
+    window.open(`https://github.com/${owner}/${repo}/blob/${branch}/${path}${line ? `#L${line}` : ''}`, '_blank');
   };
 
   const handleExplain = async () => {
@@ -88,7 +88,7 @@ const ResultCard = ({ result, idx, copiedId, handleCopy, query }) => {
             <Book size={20} />
           </div>
           <div className="flex flex-col">
-             <div className="flex items-center gap-2 cursor-pointer" onClick={() => openGitHub(result.owner, result.repo, result.path)}>
+             <div className="flex items-center gap-2 cursor-pointer" onClick={() => openGitHub(result.owner, result.repo, result.path, null, result.branch)}>
                 <span className="text-sm font-bold hover:text-accent-blue transition-colors">{result.owner} / {result.repo}</span>
                 <ExternalLink size={12} className="text-white/20" />
              </div>

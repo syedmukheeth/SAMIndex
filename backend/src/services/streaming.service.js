@@ -26,7 +26,7 @@ class StreamingIngestionService {
    * Main entry point for streaming ingestion (Dual-Mode)
    * @param {Boolean} isEphemeral - If true, bypasses MongoDB persistence
    */
-  async processStream(owner, repo, zipStream, job, id, isEphemeral = false) {
+  async processStream(owner, repo, zipStream, job, id, isEphemeral = false, branch = 'main') {
     const startTime = Date.now();
     let filesProcessed = 0;
     let totalBytes = 0;
@@ -87,7 +87,8 @@ class StreamingIngestionService {
                 await ephemeralService.indexFile(`${owner.toLowerCase()}:${repo.toLowerCase()}`, {
                   path: cleanPath,
                   content,
-                  lang: ext.substring(1) || 'text'
+                  lang: ext.substring(1) || 'text',
+                  branch
                 });
               } else {
                 await CodeFile.findOneAndUpdate(
@@ -96,6 +97,7 @@ class StreamingIngestionService {
                     content,
                     lang: ext.substring(1) || 'text',
                     lastIndexedSession: id,
+                    branch,
                     updatedAt: new Date()
                   },
                   { upsert: true }
@@ -137,7 +139,8 @@ class StreamingIngestionService {
               { 
                 isIndexed: filesProcessed > 0,
                 lastIndexedAt: new Date(),
-                fileCount: filesProcessed
+                fileCount: filesProcessed,
+                defaultBranch: branch
               },
               { upsert: true }
             );

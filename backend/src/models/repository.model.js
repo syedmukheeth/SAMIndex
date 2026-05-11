@@ -50,6 +50,10 @@ const repositorySchema = new mongoose.Schema(
       ref: 'User',
       required: [true, 'Repository must belong to a user'],
     },
+    defaultBranch: {
+      type: String,
+      default: 'main',
+    },
   },
   {
     timestamps: true,

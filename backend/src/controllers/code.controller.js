@@ -63,6 +63,7 @@ exports.indexRepository = catchAsync(async (req, res, next) => {
         url: meta.html_url,
         description: meta.description,
         githubId: meta.id,
+        defaultBranch: meta.default_branch || 'main',
         isIndexed: false,
         user: req.user?._id // ASSOCIATE WITH USER
       });
@@ -277,7 +278,7 @@ exports.searchCode = catchAsync(async (req, res, next) => {
     CodeFile.find(searchQuery)
       .skip(skip)
       .limit(limitNum)
-      .select('repo path owner content')
+      .select('repo path owner content branch')
       .lean(),
     CodeFile.countDocuments(searchQuery)
   ]);
@@ -327,6 +328,7 @@ exports.searchCode = catchAsync(async (req, res, next) => {
       repo: file.repo,
       owner: file.owner,
       path: file.path,
+      branch: file.branch || 'main',
       relevance,
       snippets // Array of top 3 snippets
     };
