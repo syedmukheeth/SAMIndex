@@ -337,25 +337,54 @@ exports.searchCode = catchAsync(async (req, res, next) => {
   // 3. Save History (Async, don't wait for response)
   const trimmedQuery = q.trim();
   if (req.user && trimmedQuery.length >= 3) {
-    // Avoid duplicate spam: Upsert based on userId, repo, and query
-    // This keeps the history clean but updates the 'last searched' time
-    SearchHistory.findOneAndUpdate(
-      { 
-        userId: req.user.id, 
-        owner: req.query.owner || 'global',
-        repo: repo || 'global', 
-        query: trimmedQuery 
-      },
-      { 
-        timestamp: new Date(),
-        isEphemeral: !!req.query.sessionId // If sessionId is present, it's ephemeral
-      },
-      { 
-        upsert: true, 
-        new: true,
-        setDefaultsOnInsert: true 
+    const saveHistory = async () => {
+      try {
+        const ownerKey = req.query.owner || 'global';
+        const repoKey = repo || 'global';
+
+        // Fetch the most recent entry for this user and repository context
+        const lastEntry = await SearchHistory.findOne({ 
+          userId: req.user.id,
+          owner: ownerKey,
+          repo: repoKey
+        }).sort({ timestamp: -1 });
+
+        const now = new Date();
+        // Smart Merge Logic: If it's an extension of the last query and happened within 2 minutes, update it.
+        const isExtension = lastEntry && trimmedQuery.toLowerCase().startsWith(lastEntry.query.toLowerCase());
+        const isRecent = lastEntry && (now - lastEntry.timestamp) < 120000; // 2 minutes window
+
+        if (isRecent && isExtension) {
+          lastEntry.query = trimmedQuery;
+          lastEntry.timestamp = now;
+          lastEntry.isEphemeral = !!req.query.sessionId;
+          await lastEntry.save();
+        } else {
+          // Otherwise, perform a standard upsert for the exact query to avoid duplication
+          await SearchHistory.findOneAndUpdate(
+            { 
+              userId: req.user.id, 
+              owner: ownerKey,
+              repo: repoKey, 
+              query: trimmedQuery 
+            },
+            { 
+              timestamp: now,
+              isEphemeral: !!req.query.sessionId
+            },
+            { 
+              upsert: true, 
+              new: true,
+              setDefaultsOnInsert: true 
+            }
+          );
+        }
+      } catch (err) {
+        console.error('Error saving search history:', err);
       }
-    ).catch(err => console.error('Error saving search history:', err));
+    };
+    
+    saveHistory();
   }
 
   // 3. Fallback: If no results found in DB but searching a specific repo

@@ -347,6 +347,47 @@ const CodeSearchPage = () => {
   const searchInputRef = React.useRef(null);
   const debouncedQuery = useDebounce(query, 500);
 
+  // NEW: Smart History Ingestion (Senior Dev Logic)
+  const syncSmartHistory = (searchQuery, target) => {
+    try {
+      const savedHistory = JSON.parse(localStorage.getItem('search_history') || '[]');
+      const lastEntry = savedHistory[0];
+      const now = new Date();
+      
+      const isExtension = lastEntry && searchQuery.toLowerCase().startsWith(lastEntry.query.toLowerCase());
+      const isRecent = lastEntry && (now - new Date(lastEntry.timestamp)) < 120000; // 2 minutes window
+      const isSameRepo = lastEntry && lastEntry.repo === target?.repo;
+
+      if (isRecent && isExtension && isSameRepo) {
+        // Update the last entry to the full query
+        lastEntry.query = searchQuery;
+        lastEntry.timestamp = now.toISOString();
+      } else {
+        // Create new entry
+        const newEntry = {
+          query: searchQuery,
+          timestamp: now.toISOString(),
+          id: Math.random().toString(36).substr(2, 9),
+          owner: target?.owner,
+          repo: target?.repo,
+          isEphemeral: searchMode === 'ephemeral'
+        };
+        
+        // Remove duplicates and limit
+        const filtered = savedHistory.filter(h => 
+          !(h.query.toLowerCase() === searchQuery.toLowerCase() && h.repo === target?.repo)
+        );
+        filtered.unshift(newEntry);
+        localStorage.setItem('search_history', JSON.stringify(filtered.slice(0, 30)));
+        return; // Already saved
+      }
+      
+      localStorage.setItem('search_history', JSON.stringify(savedHistory.slice(0, 30)));
+    } catch (err) {
+      console.error('History sync failed:', err);
+    }
+  };
+
   // NEW: Instant Workspace Previewing (Senior Dev UX)
   const previewRepo = useMemo(() => {
     if (activeRepo) return activeRepo;
@@ -513,27 +554,8 @@ const CodeSearchPage = () => {
 
       setLoading(true);
 
-      // Save to history immediately on search (before API call)
-      // so history is recorded even if the API fails
-      try {
-        const target = activeRepo || previewRepo;
-        const savedHistory = JSON.parse(localStorage.getItem('search_history') || '[]');
-        const newEntry = {
-          query: debouncedQuery,
-          timestamp: new Date().toISOString(),
-          id: Math.random().toString(36).substr(2, 9),
-          owner: target?.owner,
-          repo: target?.repo,
-          isEphemeral: searchMode === 'ephemeral'
-        };
-        const updatedHistory = [
-          newEntry,
-          ...savedHistory.filter(h => h.query !== debouncedQuery || h.repo !== newEntry.repo)
-        ].slice(0, 30);
-        localStorage.setItem('search_history', JSON.stringify(updatedHistory));
-      } catch (hErr) {
-        console.error('Failed to save search history:', hErr);
-      }
+      // NEW: Smart History Ingestion
+      syncSmartHistory(debouncedQuery, activeRepo || previewRepo);
 
       try {
         const target = activeRepo || previewRepo;
@@ -584,21 +606,8 @@ const CodeSearchPage = () => {
         searchInputRef.current?.focus();
       }
       if (e.key === 'Enter' && document.activeElement === searchInputRef.current && query) {
-        // Force save to history on Enter
-        const savedHistory = JSON.parse(localStorage.getItem('search_history') || '[]');
-        const newEntry = { 
-          query, 
-          timestamp: new Date().toISOString(),
-          id: Math.random().toString(36).substr(2, 9),
-          owner: activeRepo?.owner,
-          repo: activeRepo?.repo,
-          isEphemeral: !!ephemeralSessionId
-        };
-        const updatedHistory = [
-          newEntry,
-          ...savedHistory.filter(h => h.query !== query)
-        ].slice(0, 30);
-        localStorage.setItem('search_history', JSON.stringify(updatedHistory));
+        // Force sync to history on Enter
+        syncSmartHistory(query, activeRepo || previewRepo);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
